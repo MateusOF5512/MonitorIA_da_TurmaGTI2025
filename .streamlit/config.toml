@@ -1,0 +1,14 @@
+[theme]
+base = 'light'
+primaryColor = "#32a041"
+backgroundColor = '#FFFFFF'
+textColor = "#0d0d0d"
+font = "sans serif"
+buttonRadius ="large"
+
+
+[client]
+showErrorDetails = "stacktrace"
+toolbarMode = "viewer"
+showSidebarNavigation = true
+
