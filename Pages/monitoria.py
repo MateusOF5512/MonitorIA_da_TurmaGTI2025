@@ -49,49 +49,46 @@ with st.sidebar:
         st.rerun()
 
 
-    with st.expander("Configurar MonitorIA"):
-        st.markdown("teste")
+with st.expander("Configurar MonitorIA"):
 
+    models = {
+        "groq/compound-mini": {"name": "Gorq | Compound Mini | 09/2023", "tokens": 8192},
+        "groq/compound": {"name": "Gorq | Compound | 09/2023", "tokens": 8192},
 
+        "openai/gpt-oss-20b": {"name": "OpenAI | GPT OSS 20B | 08/2025", "tokens": 65536},
+        "openai/gpt-oss-120b": {"name": "OpenAI | GPT OSS 120B | 08/2025", "tokens": 65536},
 
-        models = {
-            "groq/compound-mini": {"name": "Gorq | Compound Mini | 09/2023", "tokens": 8192},
-            "groq/compound": {"name": "Gorq | Compound | 09/2023", "tokens": 8192},
+        "gemma2-9b-it": {"name": "Google | Gemma 2 9B | 09/2023", "tokens": 8192},
 
-            "openai/gpt-oss-20b": {"name": "OpenAI | GPT OSS 20B | 08/2025", "tokens": 65536},
-            "openai/gpt-oss-120b": {"name": "OpenAI | GPT OSS 120B | 08/2025", "tokens": 65536},
+        "llama-3.3-70b-versatile": {"name": "Meta | Llama 3.3 70B | 12/2024", "tokens": 32768},
+        "meta-llama/llama-4-maverick-17b-128e-instruct": {"name": "Meta | Llama 4 Maverick 17B | 04/2025", "tokens": 8192,},
 
-            "gemma2-9b-it": {"name": "Google | Gemma 2 9B | 09/2023", "tokens": 8192},
+        "qwen/qwen3-32b": {"name":"Alibaba | Qwen3 32B | 05/2025", "tokens": 16384},
 
-            "llama-3.3-70b-versatile": {"name": "Meta | Llama 3.3 70B | 12/2024", "tokens": 32768},
-            "meta-llama/llama-4-maverick-17b-128e-instruct": {"name": "Meta | Llama 4 Maverick 17B | 04/2025", "tokens": 8192,},
+        "deepseek-r1-distill-llama-70b": {"name": "DeepSeek | R1 Llama 70B | 01/2025", "tokens": 4096}
+    }
 
-            "qwen/qwen3-32b": {"name":"Alibaba | Qwen3 32B | 05/2025", "tokens": 16384},
+    model_options = st.selectbox(
+            "Selecione um Modelo de Linguagem Natural:",
+            options=list(models.keys()),
+            format_func=lambda x: models[x]["name"],
+            index=0
+        )
 
-            "deepseek-r1-distill-llama-70b": {"name": "DeepSeek | R1 Llama 70B | 01/2025", "tokens": 4096}
-        }
+    if st.session_state.selected_model != model_options:
+        st.session_state.mensagem = []
+        st.session_state.selected_model = model_options
+        st.rerun()
 
-        model_options = st.selectbox(
-                "Selecione um Modelo de Linguagem Natural:",
-                options=list(models.keys()),
-                format_func=lambda x: models[x]["name"],
-                index=0
-            )
+    max_tokens_range = models[model_options]["tokens"]
 
-        if st.session_state.selected_model != model_options:
-            st.session_state.mensagem = []
-            st.session_state.selected_model = model_options
-            st.rerun()
+    max_tokens = st.slider("Máximo de Tokens para o Modelo:",
+                           min_value=512, max_value=max_tokens_range,
+                           value=int(max_tokens_range/3), step=512)
 
-        max_tokens_range = models[model_options]["tokens"]
-
-        max_tokens = st.slider("Máximo de Tokens para o Modelo:",
-                               min_value=512, max_value=max_tokens_range,
-                               value=int(max_tokens_range/3), step=512)
-
-        temperature = st.slider("Selecione a Criatividade do Modelo:",
-                               min_value=0.1, max_value=2.0,
-                               value=0.4, step=0.2)
+    temperature = st.slider("Selecione a Criatividade do Modelo:",
+                           min_value=0.1, max_value=2.0,
+                           value=0.4, step=0.2)
 
 
 if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de TI..."):
