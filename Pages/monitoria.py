@@ -44,6 +44,10 @@ def generate_chat_responses(chat_completion) -> Generator[str, None, None]:
 
 with st.sidebar:
 
+    if st.button("Reiniciar conversa"):
+        st.session_state.mensagem = []
+        st.rerun()
+
 
     with st.expander("Configurar MonitorIA"):
         st.markdown("teste")
@@ -88,12 +92,6 @@ with st.sidebar:
         temperature = st.slider("Selecione a Criatividade do Modelo:",
                                min_value=0.1, max_value=2.0,
                                value=0.4, step=0.2)
-
-    if st.button("Reiniciar conversa"):
-        st.session_state.mensagem = []
-        st.rerun()
-
-
 
 
 if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de TI..."):
