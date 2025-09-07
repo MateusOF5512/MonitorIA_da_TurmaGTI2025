@@ -65,11 +65,12 @@ def logout():
 
 
 pages = {
-    "Navegação": [
+    "Geral": [
         st.Page("Pages/home.py", title="Página Inicial", icon='🏠'),
-        st.Page("Pages/monitoria.py", title="MonitorIA", icon='👨‍🏫')
+        st.Page("Pages/monitoria.py", title="MonitorIA", icon='👨‍🏫'),
+        st.Page("Pages/enviarcaderno.py", title="Enviar Caderno", icon='📚')
     ],
-    "Disciplinas": [
+    "Cadernos": [
         st.Page("Pages/metodologiadeprojetos.py", title="Métodologia de Projetos", icon='🎯'),
         st.Page("Pages/estatisticaempresarial.py", title="Estatística Empresarial", icon='📈'),
         st.Page("Pages/gestaoorganizacional.py", title="Gestão Organizacional", icon='🏢'),
