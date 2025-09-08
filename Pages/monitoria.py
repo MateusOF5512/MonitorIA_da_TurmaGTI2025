@@ -112,7 +112,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
             top_p= 0.95,
             stream=True,
             reasoning_format="raw",
-            reasoning_effort="default",
+            reasoning_effort="medium",
         )
 
         with st.chat_message("assistant", avatar='👨‍🏫'):
@@ -128,6 +128,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
     else:
         combined_response = '\n'.join(str(item) for item in full_response)
         st.session_state.mensagem.append({"role": "assistant", "content": combined_response})
+
 
 
 
