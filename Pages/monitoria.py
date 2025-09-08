@@ -80,15 +80,9 @@ with st.expander("Configurar MonitorIA"):
         st.session_state.selected_model = model_options
         st.rerun()
 
-    max_tokens_range = models[model_options]["tokens"]
-
-    max_tokens = st.slider("Máximo de Tokens para o Modelo:",
-                           min_value=512, max_value=max_tokens_range,
-                           value=int(max_tokens_range/3), step=512)
-
     temperature = st.slider("Selecione a Criatividade do Modelo:",
                            min_value=0.1, max_value=2.0,
-                           value=0.4, step=0.2)
+                           value=0.2, step=0.1)
 
 
 if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de TI..."):
@@ -99,26 +93,35 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
 
     conteudos_texto = "\n".join([f"ID {row['id']}: {row['conteudo']}" for row in dados])
     system = f"""
-    Você é o Monitor da Turma (2° fase) de Gestão da Tecnologia da Informação do IFSC Florianopolis,
-    seu papel é apenas auxilar os estudantes tirando duvidas sobre o conteudo dos cadernos e arquivos disponivies,
-    sua resposta deve ser em apenas um paragrafo, seja claro e coerente, use negrito para reforçar palavras chaves,
-    responda apenas com base nos dados do a seguir, nao gere nenhuma infromação nova que nao esteja 
-    no banco de dados: {conteudos_texto} 
-    """
+    Você é o **Monitor da Turma** (2ª fase) do curso de Gestão da Tecnologia da Informação do IFSC Florianópolis.  
+    Seu papel é **apenas auxiliar os estudantes** respondendo dúvidas sobre os conteúdos dos cadernos e arquivos fornecidos.  
+    
+    1 - Regras importantes:
+    - Responda **sempre em apenas um parágrafo**.  
+    - Seja **claro, direto, coerente e prestativo**.  
+    - Use **negrito** para destacar **conceitos, termos técnicos ou pontos principais**.  
+    - **Nunca** invente ou complemente com informações externas.  
+    - Baseie sua resposta **exclusivamente** nos dados a seguir conteudos_texto:  
+
+    {conteudos_texto}
+"""
 
 
     try:
         chat_completion = client.chat.completions.create(
-            model=model_options,
+            model="openai/gpt-oss-20b",
             messages=[
                          {"role": "system", "content": system}
                      ] + [
                          {"role": m["role"], "content": m["content"]}
                          for m in st.session_state.mensagem
                      ],
-            max_completion_tokens=max_tokens,
             temperature=temperature,
+            top_p= 0.95,
             stream=True,
+            response_format={type: "text"},
+            reasoning_format="raw",
+            reasoning_effort="default",
         )
 
         with st.chat_message("assistant", avatar='👨‍🏫'):
@@ -134,6 +137,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
     else:
         combined_response = '\n'.join(str(item) for item in full_response)
         st.session_state.mensagem.append({"role": "assistant", "content": combined_response})
+
 
 
 
