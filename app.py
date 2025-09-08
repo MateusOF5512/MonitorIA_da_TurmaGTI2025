@@ -83,7 +83,7 @@ pages = {
         st.Page("Pages/infraestruturaderedes.py", title="Infraestrutura de Redes", icon='🌐'),
         st.Page("Pages/processodedesenvolvimentodesistemas.py", title="Proc. e Desv. de Sistemas", icon='⚙️'),
         st.Page("Pages/qualidadedesoftware.py", title="Qualidade de Software", icon='✅'),
-        st.Page("Pages/sistemaoperacionalwindows.py", title="Sistema Operacional (Windows)", icon='🖱️'),
+        st.Page("Pages/sistemaoperacionalwindows.py", title="Sist. Operacional (Windows)", icon='🖱️'),
         st.Page("Pages/tecnologiadehardware.py", title="Tecnologia de Hardware", icon='🖥️'),
     ],
 }
@@ -95,6 +95,7 @@ else:
 
 
 pg.run()
+
 
 
 
