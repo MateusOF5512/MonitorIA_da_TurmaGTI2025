@@ -25,6 +25,10 @@ def login():
 
             usuario_digitado = st.text_input("**Usuário do SIGAA:**", max_chars=20)
             password = st.text_input("**Senha LAB04:**", type="password", max_chars=10)
+
+            usuario_digitado = usuario_digitado.strip().lower()
+            password = password.strip().lower()
+          
             col1, col2, col3 = st.columns([1, 1, 1])
             with col1:
                 st.markdown('')
@@ -83,5 +87,6 @@ if st.session_state.logado is not True:
     pg = st.navigation([st.Page(login)])
 else:
     pg = st.navigation(pages, position="sidebar", expanded=True)
+
 
 pg.run()
