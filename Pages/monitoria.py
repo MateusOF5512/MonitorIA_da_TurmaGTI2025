@@ -95,10 +95,8 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
     - Seja **claro, direto, coerente e prestativo**.  
     - Use **negrito** para destacar **conceitos, termos técnicos ou pontos principais**.  
     - **Nunca** invente ou complemente com informações externas.  
-    - Baseie sua resposta **exclusivamente** nos dados a seguir conteudos_texto:  
-
-    {conteudos_texto}
-"""
+    - Baseie sua resposta **exclusivamente** nos dados a seguir conteudos_texto: 
+    {conteudos_texto}"""
 
 
     try:
@@ -113,7 +111,6 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
             temperature=0.2,
             top_p= 0.95,
             stream=True,
-            response_format={type: "text"},
             reasoning_format="raw",
             reasoning_effort="default",
         )
@@ -131,6 +128,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
     else:
         combined_response = '\n'.join(str(item) for item in full_response)
         st.session_state.mensagem.append({"role": "assistant", "content": combined_response})
+
 
 
 
