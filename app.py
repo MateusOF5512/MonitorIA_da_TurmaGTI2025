@@ -72,7 +72,8 @@ pages = {
     "Geral": [
         st.Page("Pages/home.py", title="Página Inicial", icon='🏠'),
         st.Page("Pages/monitoria.py", title="MonitorIA", icon='👨‍🏫'),
-        st.Page("Pages/enviarcaderno.py", title="Enviar Caderno", icon='📚')
+        st.Page("Pages/enviarcaderno.py", title="Enviar Anotações", icon='📚'),
+        st.Page("Pages/dashboard.py", title="Dashboards", icon='📊')
     ],
     "Cadernos": [
         st.Page("Pages/metodologiadeprojetos.py", title="Métodologia de Projetos", icon='🎯'),
@@ -90,3 +91,4 @@ else:
 
 
 pg.run()
+
