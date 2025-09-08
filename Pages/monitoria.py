@@ -49,40 +49,34 @@ with st.sidebar:
         st.rerun()
 
 
-with st.expander("Configurar MonitorIA"):
-
     models = {
-        "groq/compound-mini": {"name": "Gorq | Compound Mini | 09/2023", "tokens": 8192},
-        "groq/compound": {"name": "Gorq | Compound | 09/2023", "tokens": 8192},
-
-        "openai/gpt-oss-20b": {"name": "OpenAI | GPT OSS 20B | 08/2025", "tokens": 65536},
-        "openai/gpt-oss-120b": {"name": "OpenAI | GPT OSS 120B | 08/2025", "tokens": 65536},
-
-        "gemma2-9b-it": {"name": "Google | Gemma 2 9B | 09/2023", "tokens": 8192},
-
-        "llama-3.3-70b-versatile": {"name": "Meta | Llama 3.3 70B | 12/2024", "tokens": 32768},
-        "meta-llama/llama-4-maverick-17b-128e-instruct": {"name": "Meta | Llama 4 Maverick 17B | 04/2025", "tokens": 8192,},
-
-        "qwen/qwen3-32b": {"name":"Alibaba | Qwen3 32B | 05/2025", "tokens": 16384},
-
-        "deepseek-r1-distill-llama-70b": {"name": "DeepSeek | R1 Llama 70B | 01/2025", "tokens": 4096}
-    }
-
+            "groq/compound-mini": {"name": "Gorq | Compound Mini | 09/2023", "tokens": 8192},
+            "groq/compound": {"name": "Gorq | Compound | 09/2023", "tokens": 8192},
+    
+            "openai/gpt-oss-20b": {"name": "OpenAI | GPT OSS 20B | 08/2025", "tokens": 65536},
+            "openai/gpt-oss-120b": {"name": "OpenAI | GPT OSS 120B | 08/2025", "tokens": 65536},
+    
+            "gemma2-9b-it": {"name": "Google | Gemma 2 9B | 09/2023", "tokens": 8192},
+    
+            "llama-3.3-70b-versatile": {"name": "Meta | Llama 3.3 70B | 12/2024", "tokens": 32768},
+            "meta-llama/llama-4-maverick-17b-128e-instruct": {"name": "Meta | Llama 4 Maverick 17B | 04/2025", "tokens": 8192,},
+    
+            "qwen/qwen3-32b": {"name":"Alibaba | Qwen3 32B | 05/2025", "tokens": 16384},
+    
+            "deepseek-r1-distill-llama-70b": {"name": "DeepSeek | R1 Llama 70B | 01/2025", "tokens": 4096}
+        }
+    
     model_options = st.selectbox(
             "Selecione um Modelo de Linguagem Natural:",
             options=list(models.keys()),
             format_func=lambda x: models[x]["name"],
             index=0
-        )
-
+            )
+    
     if st.session_state.selected_model != model_options:
         st.session_state.mensagem = []
         st.session_state.selected_model = model_options
         st.rerun()
-
-    temperature = st.slider("Selecione a Criatividade do Modelo:",
-                           min_value=0.1, max_value=2.0,
-                           value=0.2, step=0.1)
 
 
 if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de TI..."):
@@ -116,7 +110,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
                          {"role": m["role"], "content": m["content"]}
                          for m in st.session_state.mensagem
                      ],
-            temperature=temperature,
+            temperature=0.2,
             top_p= 0.95,
             stream=True,
             response_format={type: "text"},
@@ -137,6 +131,7 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
     else:
         combined_response = '\n'.join(str(item) for item in full_response)
         st.session_state.mensagem.append({"role": "assistant", "content": combined_response})
+
 
 
 
