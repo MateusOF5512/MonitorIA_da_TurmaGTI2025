@@ -77,7 +77,6 @@ pages = {
     ],
     "Cadernos": [
         st.Page("Pages/metodologiadeprojetos.py", title="Métodologia de Projetos", icon='🎯'),
-      
         st.Page("Pages/gestaoorganizacional.py", title="Gestão Organizacional", icon='🏢'),
         st.Page("Pages/estatisticaempresarial.py", title="Estatística Empresarial", icon='📈'),
         st.Page("Pages/infraestruturaderedes.py", title="Infraestrutura de Redes", icon='🌐'),
@@ -89,9 +88,9 @@ pages = {
 }
 
 if st.session_state.logado is not True:
-    pg = st.navigation([st.Page(login)])
+    pg = st.navigation([st.Page(login)], position="top", expanded=False)
 else:
-    pg = st.navigation(pages, position="sidebar", expanded=True)
+    pg = st.navigation(pages, position="top", expanded=False)
 
 
 pg.run()
