@@ -12,9 +12,11 @@ Com o apoio da MonitorIA, o chatbot com inteligência artificial integrado aos c
 '''
 st.markdown('')
 st.markdown('')
+st.markdown('*Objetivo Geral*')
 st.markdown(TEXTO)
 st.markdown('')
 st.markdown('')
 st.divider()
+
 
 
