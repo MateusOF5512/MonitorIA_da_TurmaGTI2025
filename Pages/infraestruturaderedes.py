@@ -158,8 +158,6 @@ with st.container(border=True):
             try:
                 dados_json3 = transforma_json(df3)
 
-                st.markdown(dados_json3)
-
                 # Chamada à IA e Captura da resposta
                 resposta3 = chat_completion_disciplina(dados_json3, model_options, temperature)
 
