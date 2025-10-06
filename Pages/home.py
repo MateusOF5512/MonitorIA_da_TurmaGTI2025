@@ -12,11 +12,12 @@ Com o apoio da MonitorIA, o **assistente com inteligência artificial integrado 
 '''
 st.markdown('')
 st.markdown('')
-st.markdown('**- Objetivo Geral**')
+st.markdown('**Objetivo Geral**')
 st.markdown(TEXTO)
 st.markdown('')
 st.markdown('')
 st.divider()
+
 
 
 
