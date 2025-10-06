@@ -6,8 +6,9 @@ st.subheader("🏠 Bem vindo(a)  ***"+conta+"***  ao Caderno da Turma", divider=
 
 
 TEXTO = '''
-O **Caderno da Turma GTI** tem como objetivo principal melhorar a forma como a turma de GTI 2025 **organiza, compartilha e revisa suas anotações de aula**. A plataforma funciona como um **caderno digital coletivo**, onde os alunos podem armazenar seus resumos e anotações, incentivando a participação de todos e facilitando o acesso ao conteúdo de forma centralizada e prática.
-Com o apoio da MonitorIA, o **assistente com inteligência artificial integrado aos cadernos**, os registros feitos pelos alunos deixam de ser apenas anotações e passam a servir também como fonte para revisões, esclarecimentos de dúvidas e apoio ao estudo individual. Assim, o projeto busca resolver a falta de organização e de colaboração no processo de aprendizagem, tornando o estudo mais dinâmico, acessível e conectado entre os colegas.
+O projeto **Caderno da Turma GTI** tem como objetivo desenvolver um **caderno digital coletivo** para os alunos da segunda fase do curso de Gestão da Tecnologia da Informação (GTI 2025). A proposta busca **centralizar anotações, materiais e recursos de estudo em um ambiente colaborativo**, enfrentando desafios como a dispersão de informações e a falta de organização dos registros acadêmicos. O sistema pretende oferecer uma solução simples, moderna e integrada ao contexto da turma, promovendo a *troca de conhecimento e fortalecendo o aprendizado coletivo*.
+
+O projeto será restrito à turma de GTI 2025 e operará dentro das limitações das ferramentas gratuitas utilizadas, assegurando viabilidade e execução completa. O desenvolvimento seguirá etapas que incluem diagnóstico, definição de requisitos, construção, testes e implantação final, com acompanhamento inicial do uso. Seu desempenho será avaliado por métricas como engajamento, frequência de acesso, volume de anotações, interações com a IA e satisfação dos usuários, permitindo mensurar o impacto do caderno digital na organização, colaboração e aprendizado da turma.
 
 '''
 st.markdown('')
@@ -17,6 +18,7 @@ st.markdown(TEXTO)
 st.markdown('')
 st.markdown('')
 st.divider()
+
 
 
 
