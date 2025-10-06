@@ -12,9 +12,6 @@ Com o apoio da MonitorIA, o chatbot com inteligência artificial integrado aos c
 '''
 
 st.markdown(TEXTO)
-st.divider()
-
-st.expander("COMO USAR O SISTEMA"):
-  st.markdown("COMO USAR O SISTEMA")
 
 st.divider()
+
