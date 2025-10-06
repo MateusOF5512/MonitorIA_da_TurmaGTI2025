@@ -27,7 +27,9 @@ conta = st.session_state.usuario_logado
 db = get_data()
 # Trnasformar os dados para json para facilitar leitura do modelo de LLM
 df = pd.DataFrame(db)
-colunas_para_usar = ["id", "conteudo", "usuario", "semana_aula", "data_aula", "disciplina"]
+colunas_para_usar = ["id", "conteudo", "usuario", "disciplina"]
+df = df[df["disciplina"] == "Infraestrutura de Redes"]
+
 df = df[[c for c in colunas_para_usar if c in df.columns]]
 conteudos_json = df.to_dict(orient="records")
 dados = json.dumps(conteudos_json, ensure_ascii=False, indent=2)
@@ -71,7 +73,7 @@ with st.sidebar:
 
         max_tokens = st.slider("Máximo de Tokens para o Modelo:",
                                min_value=512, max_value=max_tokens_range,
-                               value=int(max_tokens_range/3), step=512)
+                               value=int(max_tokens_range/2), step=512)
 
         temperature = st.slider("Selecione a Criatividade do Modelo:",
                                min_value=0.1, max_value=2.0,
@@ -104,9 +106,10 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
 
     conteudos_texto = dados
     system = f"""
-    Você é o Monitor da Turma — um assistente acadêmico experiente, paciente e altamente didático do curso de Gestão da Tecnologia da Informação do IFSC Florianópolis. 
+    Você é o Monitor da Turma, um assistente acadêmico experiente que fornece informações a turma de Gestão de TI sobre os cadernos e anotações das aulas, paciente e altamente didático do curso de Gestão da Tecnologia da Informação do IFSC Florianópolis. 
     Seu papel é **auxiliar os estudantes exclusivamente com base nos dados fornecidos abaixo** (cadernos/arquivos do banco). Siga estas instruções estritas:
-
+    
+    0. Entenda seu papel como Monitor da Turma, responda de froma clara e educada, se apresente se necessário.
     1. Responda sempre em **português** e em **apenas um ou dois parágrafos** de forma clara, objetiva e didática.
     2. Use **negrito** (Markdown `**texto**`) para destacar palavras-chave e conceitos essenciais.
     3. **Baseie sua resposta unicamente** nas informações contidas em `conteudos_texto`. **Não** gere, suponha ou invente fatos que não estejam no banco de dados.
@@ -138,9 +141,18 @@ if prompt := st.chat_input("Pergunte algo sobre as aulas do curso de Gestão de 
 
         elapsed = time.time() - start_time
 
-        # Estimativa de tokens (caso a API não devolva usage no streaming)
-        input_tokens = sum(len(m["content"].split()) for m in st.session_state.mensagem)
-        output_tokens = len(full_response.split())
+
+        # --- Estimativa de tokens (simples e incluindo o texto do sistema) ---
+        # 1 token ≈ 4 caracteres em média (estimativa usada pela OpenAI)
+        def estimar_tokens(texto):
+            return len(texto) / 4  # aproximação leve, sem depender de tiktoken
+
+
+        # Soma de todos os textos do usuário e do sistema
+        entrada_total = system + " ".join(m["content"] for m in st.session_state.mensagem)
+
+        input_tokens = int(estimar_tokens(entrada_total))
+        output_tokens = int(estimar_tokens(full_response))
 
         st.session_state.metrics = {
             "input_tokens": input_tokens,
