@@ -87,6 +87,8 @@ with st.container(border=True):
 with st.container(border=True):
 
     dados2 = get_data_disciplina("Infraestrutura de Redes", 2)
+
+    
     if dados2 and len(dados2) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 2 - 25/08/2025", divider="green", anchor=False)
@@ -204,12 +206,13 @@ with st.container(border=True):
 
 with st.container(border=True):
     dados7 = get_data_disciplina("Infraestrutura de Redes", 7)
+    df7 = pd.DataFrame(dados7)
 
 
-    if dados7 and len(dados7) > 0:
+    if df7 and len(df7) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 7 - 29/09/2025", divider="green", anchor=False)
-        st.dataframe(dados7, key=327)
+        st.dataframe(df7, key=327)
         
 
         st.markdown("")
@@ -220,7 +223,7 @@ with st.container(border=True):
         with col2:
             st.markdown("")
         with col3:
-            resumo3 = st.button("Resumo da Aula", key="botao_resumo7")
+            resumo7 = st.button("Resumo da Aula", key="botao_resumo7")
         with col4:
             st.markdown("")
         with col5:
@@ -228,9 +231,9 @@ with st.container(border=True):
 
         st.markdown("---")
 
-        if resumo3:
+        if resumo7:
             try:
-                dados_json7 = transforma_json(dados7)
+                dados_json7 = transforma_json(df7)
 
                 # Chamada à IA e Captura da resposta
                 resposta7 = chat_completion_disciplina(dados_json7, model_options, temperature)
@@ -247,11 +250,12 @@ with st.container(border=True):
 
 with st.container(border=True):
     dados8 = get_data_disciplina("Infraestrutura de Redes", 8)
+    df8 = pd.DataFrame(dados8)
 
-    if dados8 and len(dados8) > 0:
+    if df8 and len(df8) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
-        st.dataframe(dados8, key=377)
+        st.dataframe(df8, key=377)
         
 
         st.markdown("")
@@ -262,7 +266,7 @@ with st.container(border=True):
         with col2:
             st.markdown("")
         with col3:
-            resumo3 = st.button("Resumo da Aula", key="botao_resumo8")
+            resumo8 = st.button("Resumo da Aula", key="botao_resumo8")
         with col4:
             st.markdown("")
         with col5:
@@ -270,9 +274,9 @@ with st.container(border=True):
 
         st.markdown("---")
 
-        if resumo3:
+        if resumo8:
             try:
-                dados_json8 = transforma_json(dados8)
+                dados_json8 = transforma_json(df8)
 
                 # Chamada à IA e Captura da resposta
                 resposta8 = chat_completion_disciplina(dados_json8, model_options, temperature)
@@ -397,4 +401,5 @@ with st.container(border=True):
     else:
         st.subheader("Semana 20 - 29/12/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
+
 
