@@ -203,19 +203,89 @@ with st.container(border=True):
         st.warning("Ainda não há conteúdo disponível para esta semana.")
 
 with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 7)
-    if dados and len(dados) > 0:
+    dados7 = get_data_disciplina("Infraestrutura de Redes", 7)
+
+
+    if dados7 and len(dados7) > 0:
+        # Se retornou algo → divider verde
         st.subheader("Semana 7 - 29/09/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=27)
+        st.dataframe(dados7, key=327)
+        
+
+        st.markdown("")
+
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        with col1:
+            st.markdown("")
+        with col2:
+            st.markdown("")
+        with col3:
+            resumo3 = st.button("Resumo da Aula", key="botao_resumo7")
+        with col4:
+            st.markdown("")
+        with col5:
+            st.markdown("")
+
+        st.markdown("---")
+
+        if resumo3:
+            try:
+                dados_json7 = transforma_json(dados7)
+
+                # Chamada à IA e Captura da resposta
+                resposta7 = chat_completion_disciplina(dados_json7, model_options, temperature)
+
+                # Exibição no Markdown
+                st.markdown(resposta7)
+
+            except Exception as e:
+                st.error(f"Erro ao gerar resposta: {e}")
+
     else:
         st.subheader("Semana 7 - 29/09/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
 
 with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 8)
+    dados8 = get_data_disciplina("Infraestrutura de Redes", 8)
+
+    if dados8 and len(dados8) > 0:
+        # Se retornou algo → divider verde
+        st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
+        st.dataframe(dados8, key=377)
+        
+
+        st.markdown("")
+
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        with col1:
+            st.markdown("")
+        with col2:
+            st.markdown("")
+        with col3:
+            resumo3 = st.button("Resumo da Aula", key="botao_resumo8")
+        with col4:
+            st.markdown("")
+        with col5:
+            st.markdown("")
+
+        st.markdown("---")
+
+        if resumo3:
+            try:
+                dados_json8 = transforma_json(dados8)
+
+                # Chamada à IA e Captura da resposta
+                resposta8 = chat_completion_disciplina(dados_json8, model_options, temperature)
+
+                # Exibição no Markdown
+                st.markdown(resposta8)
+
+            except Exception as e:
+                st.error(f"Erro ao gerar resposta: {e}")
+    
     if dados and len(dados) > 0:
         st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=28)
+        st.dataframe(dados, key=248)
     else:
         st.subheader("Semana 8 - 06/10/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
@@ -327,3 +397,4 @@ with st.container(border=True):
     else:
         st.subheader("Semana 20 - 29/12/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
+
