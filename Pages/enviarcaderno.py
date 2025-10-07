@@ -25,7 +25,7 @@ def add_caderno(conteudo, usuario, data_upload, data_aula, semana_aula, discipli
     }).execute()
 
 # --- INTERFACE STREAMLIT ---
-st.title("📘 Gerenciamento de Caderno da Turma")
+st.subheader("📘 Gerenciamento de Caderno da Turma", divider="rainbow", anchor=False)
 
 # Expander com widgets para manipular os dados
 usuario = st.session_state.usuario_logado
@@ -63,3 +63,4 @@ if dados:
 else:
 
     st.info("Nenhum registro encontrado.")
+
