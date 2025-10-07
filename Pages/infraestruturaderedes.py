@@ -209,7 +209,7 @@ with st.container(border=True):
     df7 = pd.DataFrame(dados7)
 
 
-    if df7 and len(df7) > 0:
+    if dados7 and len(dados7) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 7 - 29/09/2025", divider="green", anchor=False)
         st.dataframe(df7, key=327)
@@ -252,7 +252,7 @@ with st.container(border=True):
     dados8 = get_data_disciplina("Infraestrutura de Redes", 8)
     df8 = pd.DataFrame(dados8)
 
-    if df8 and len(df8) > 0:
+    if dados8 and len(dados8) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
         st.dataframe(df8, key=377)
@@ -401,5 +401,6 @@ with st.container(border=True):
     else:
         st.subheader("Semana 20 - 29/12/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
+
 
 
