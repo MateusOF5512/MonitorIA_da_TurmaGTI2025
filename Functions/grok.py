@@ -44,3 +44,81 @@ def chat_completion_disciplina(dados):
     resposta = chat_completion.choices[0].message.content
 
     return resposta
+
+
+def criar_questoes_com_groq(resposta_ia, disciplina):
+    prompt_perguntas = """
+    Você é uma IA educacional especializada em gerar perguntas de múltipla escolha a partir de resumos de aulas da graduação em Gestão de Tcnologia da Informação.
+
+    Com base no resumo da aula fornecido, elabore 4 perguntas com nível de complexidade médio, voltadas para a fixação e compreensão dos principais conceitos apresentados no texto. 
+    As perguntas devem exigir atenção do aluno, evitando respostas óbvias, mas ainda rápidas de responder.
+
+    Regras:
+    1. Todas as perguntas devem ser diretamente relacionadas ao conteúdo do resumo.
+    2. Cada pergunta deve conter exatamente 3 opções de resposta (A, B e C).
+    3. Apenas uma opção deve estar correta.
+    4. A resposta deve seguir estritamente o formato JSON abaixo.
+    5. Não adicione texto explicativo, introdução ou comentários fora da estrutura.
+
+    A resposta deve ser **EXATAMENTE** neste formato JSON:
+
+    [
+        {
+            "pergunta": "1️⃣ [Texto da pergunta aqui]",
+            "opcoes": [
+                "A) [Opção A]",
+                "B) [Opção B]",
+                "C) [Opção C]"
+            ],
+            "resposta_correta": "[Letra e texto exato da alternativa correta]"
+        },
+        {
+            "pergunta": "2️⃣ [Texto da pergunta aqui]",
+            "opcoes": [
+                "A) [Opção A]",
+                "B) [Opção B]",
+                "C) [Opção C]"
+            ],
+            "resposta_correta": "[Letra e texto exato da alternativa correta]"
+        },
+        {
+            "pergunta": "3️⃣ [Texto da pergunta aqui]",
+            "opcoes": [
+                "A) [Opção A]",
+                "B) [Opção B]",
+                "C) [Opção C]"
+            ],
+            "resposta_correta": "[Letra e texto exato da alternativa correta]"
+        },
+        {
+            "pergunta": "4️⃣ [Texto da pergunta aqui]",
+            "opcoes": [
+                "A) [Opção A]",
+                "B) [Opção B]",
+                "C) [Opção C]"
+            ],
+            "resposta_correta": "[Letra e texto exato da alternativa correta]"
+        }
+    ]
+    """
+
+    chat_completion = client.chat.completions.create(
+        model='openai/gpt-oss-20b',
+        messages=[
+            {
+                "role": "system",
+                "content": prompt_perguntas
+            },
+            {
+                "role": "user",
+                "content": resposta_ia
+            }
+        ],
+        temperature=0.3,
+        stream=False
+    )
+
+    # Captura da resposta
+    resposta = chat_completion.choices[0].message.content
+
+    return resposta
