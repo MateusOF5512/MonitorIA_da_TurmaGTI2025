@@ -6,6 +6,17 @@ import json
 from Functions.database import *
 from Functions.grok import *
 
+# ===============================================================
+# CONFIGURAÇÃO INICIAL DO SESSION STATE
+# ===============================================================
+if "resumo_gerado" not in st.session_state:
+    st.session_state["resumo_gerado"] = None
+
+if "perguntas" not in st.session_state:
+    st.session_state["perguntas"] = None
+
+if "respostas_usuario" not in st.session_state:
+    st.session_state["respostas_usuario"] = {}
 
 # --- Interface ---
 st.header("🌐 Infraestrutura de Redes de Computadores", divider="rainbow", anchor=False)
@@ -35,18 +46,22 @@ with st.expander("🧠 Como usar o Caderno da Turma!"):
 
     st.markdown("")
 
+# ===============================================================
+# BLOCO DE SELEÇÃO DE CADERNOS
+# ===============================================================
+
 with st.container(border=True):
+    st.subheader("📅 Semana 1 - 18/08/2025", divider="green", anchor=False)
+
+    # 🔹 Obter dados da disciplina
     dados1 = get_data_disciplina("Infraestrutura de Redes", 1)
 
-
-    st.subheader("Semana 1 - 18/08/2025", divider="green", anchor=False)
-
     df1 = pd.DataFrame(dados1)
-    df1["resumir?"] = True
-
-    df1 = df1[["resumir?", "conteudo", "usuario"]]
+    df1["resumir"] = True
+    df1 = df1[["resumir", "conteudo", "usuario"]]
 
     st.markdown("Selecione as linhas (cadernos) que deseja incluir no resumo feito pelo ChatGPT:")
+
     editor = st.data_editor(
         df1,
         hide_index=True,
@@ -54,280 +69,97 @@ with st.container(border=True):
         key="editor_semana1",
     )
 
-    st.markdown("")
+    resumo1 = st.button("Gerar resumo da aula")
 
-    col1, col2, col3 = st.columns([1.5, 1, 1])
-    with col1:
-        st.markdown("")
-    with col2:
-        resumo1 = st.button("Gerar resumo da aula")
-    with col3:
-        st.markdown("")
-
-    st.markdown("---")
-
-
+    # ===============================================================
+    # GERAR RESUMO E PERGUNTAS
+    # ===============================================================
     if resumo1:
         try:
-            # 🔹 Filtra apenas as linhas com Resumir == True
-            linhas_resumir = editor[editor["resumir?"] == True].drop(columns=["resumir?"])
-
-            # 🔹 Se nenhuma linha for marcada, mostra aviso
+            linhas_resumir = editor[editor["resumir"] == True].drop(columns=["resumir"])
             if linhas_resumir.empty:
-                st.warning("Nenhuma linha foi selecionada para resumo. Marque ao menos uma linha na coluna 'Resumir'.")
+                st.warning("Nenhuma linha foi selecionada para resumo.")
             else:
-                # Chama a IA com apenas as linhas selecionadas
                 dados1_modelo = transforma_json(linhas_resumir)
                 resposta = chat_completion_disciplina(dados1_modelo)
 
-                # Exibe resultado
-                st.subheader("📌 Resumo gerado pela Inteligência Artificial")
-                st.markdown(resposta)
+                # 🔹 Salva no session_state
+                st.session_state["resumo_gerado"] = resposta
+
+                # 🔹 Gera 4 perguntas, cada uma com 3 opções
+                questoes = criar_questoes_com_groq(resposta, 'Metodologia de Projetos')
+
+                # Se vier como string JSON válida → converte
+                if isinstance(questoes, str):
+                    perguntas = json.loads(questoes)
+                else:
+                    # Caso a IA já retorne objeto (raro, mas pode ocorrer)
+                    perguntas = questoes
+
+                # Garante que o resultado seja uma lista
+                if not isinstance(perguntas, list):
+                    raise ValueError("Formato inválido: o retorno não é uma lista JSON.")
+
+                # Salva no session_state
+                st.session_state["perguntas"] = perguntas
+
+
+
 
         except Exception as e:
             st.error(f"⚠️ Erro ao gerar resposta: {e}")
 
-with st.container(border=True):
+    # ===============================================================
+    # EXIBIR RESUMO (DENTRO DO CONTAINER)
+    # ===============================================================
+    if st.session_state["resumo_gerado"]:
+        st.success("✅ Resumo gerado com sucesso!")
+        st.subheader("📘 Resumo gerado pelo ChatGPT OpenIA")
+        st.markdown(st.session_state["resumo_gerado"])
 
-    dados2 = get_data_disciplina("Infraestrutura de Redes", 2)
-    if dados2 and len(dados2) > 0:
-        # Se retornou algo → divider verde
-        st.subheader("Semana 2 - 25/08/2025", divider="green", anchor=False)
-
-        df2 = pd.DataFrame(dados2)
-        df2["resumir"] = True
-
-        df2 = df2[["resumir", "conteudo", "usuario"]]
-
-        st.markdown("Selecione as linhas (cadernos) que deseja incluir no resumo feito pelo ChatGPT:")
-        editor2 = st.data_editor(
-            df2,
-            hide_index=True,
-            use_container_width=True,
-            key="editor_semana2",
-        )
-
-        st.markdown("")
-
-        col1, col2, col3 = st.columns([1.5, 1, 1])
-        with col1:
-            st.markdown("")
-        with col2:
-            resumo2 = st.button("Gerar resumo da aula", key=113)
-        with col3:
-            st.markdown("")
-
+    # ===============================================================
+    # EXIBIR QUIZ (DENTRO DO CONTAINER)
+    # ===============================================================
+    if st.session_state["perguntas"]:
+        st.success("✅ Perguntas geradas com sucesso!")
         st.markdown("---")
+        st.subheader("🧠 Perguntas para fixação e revisão - Quiz Interativo")
 
-        if resumo2:
-            try:
-                # 🔹 Filtra apenas as linhas com Resumir == True
-                linhas_resumir2 = editor2[editor2["resumir"] == True].drop(columns=["resumir"])
+        respostas_usuario = st.session_state["respostas_usuario"]
 
-                # 🔹 Se nenhuma linha for marcada, mostra aviso
-                if linhas_resumir2.empty:
-                    st.warning(
-                        "Nenhuma linha foi selecionada para resumo. Marque ao menos uma linha na coluna 'Resumir'.")
+        for i, q in enumerate(st.session_state["perguntas"]):
+            with st.expander(q["pergunta"]):
+                resposta_salva = respostas_usuario.get(i)
+                # Evita ValueError caso a resposta não esteja em q["opcoes"]
+                if resposta_salva in q["opcoes"]:
+                    index_inicial = q["opcoes"].index(resposta_salva)
                 else:
-                    # Chama a IA com apenas as linhas selecionadas
-                    dados2_modelo = transforma_json(linhas_resumir2)
-                    resposta2 = chat_completion_disciplina(dados2_modelo)
+                    index_inicial = 0
 
-                    # Exibe resultado
-                    st.subheader("📌 Resumo gerado pela Inteligência Artificial")
-                    st.markdown(resposta2)
+                resposta = st.radio(
+                    "Selecione uma alternativa correta:",
+                    q["opcoes"],
+                    key=f"q{i}",
+                    index=index_inicial
+                )
 
-            except Exception as e:
-                st.error(f"⚠️ Erro ao gerar resposta: {e}")
-    else:
-        # Se não retornou nada → divider vermelho e mensagem de aviso
-        st.subheader("Semana 2 - 25/08/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
+                st.session_state["respostas_usuario"][i] = resposta
 
-with st.container(border=True):
+        if st.button("Ver resultado", key="resultado_semana1"):
+            acertos = 0
+            resultado_detalhado = []
 
-    dados_supa3 = get_data_disciplina("Infraestrutura de Redes", 3)
+            for i, q in enumerate(st.session_state["perguntas"]):
+                correta = q["resposta_correta"]
+                usuario = st.session_state["respostas_usuario"].get(i)
+                if usuario == correta:
+                    acertos += 1
+                    resultado_detalhado.append(f"✅ Questão {i+1}: Correta!")
+                else:
+                    resultado_detalhado.append(f"❌ Questão {i+1}: Errada. Resposta certa: {correta}")
 
-    if dados_supa3 and len(dados_supa3) > 0:
-        # Se retornou algo → divider verde
-        st.subheader("Semana 3 - 01/09/2025", divider="green", anchor=False)
+            nota_final = round((acertos / len(st.session_state["perguntas"])) * 10, 1)
+            st.markdown("---")
+            st.subheader(f"🏁 Sua nota: **{nota_final}/10**")
+            st.write("\n".join(resultado_detalhado))
 
-        df3 = pd.DataFrame(dados_supa3)
-        st.dataframe(df3, key=23)
-
-        st.markdown("")
-
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-        with col1:
-            st.markdown("")
-        with col2:
-            st.markdown("")
-        with col3:
-            resumo3 = st.button("Resumo da Aula 3", key="botao_resumo3")
-        with col4:
-            st.markdown("")
-        with col5:
-            st.markdown("")
-
-        st.markdown("---")
-
-    else:
-        # Se não retornou nada → divider vermelho e mensagem de aviso
-        st.subheader("Semana 3 - 01/09/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-
-    dados = get_data_disciplina("Infraestrutura de Redes", 4)
-    if dados and len(dados) > 0:
-        # Se retornou algo → divider verde
-        st.subheader("Semana 4 - 08/09/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=24)
-    else:
-        # Se não retornou nada → divider vermelho e mensagem de aviso
-        st.subheader("Semana 4 - 08/09/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 5)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 5 - 15/09/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=25)
-    else:
-        st.subheader("Semana 5 - 15/09/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 6)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 6 - 22/09/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=26)
-    else:
-        st.subheader("Semana 6 - 22/09/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 7)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 7 - 29/09/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=27)
-    else:
-        st.subheader("Semana 7 - 29/09/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 8)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=28)
-    else:
-        st.subheader("Semana 8 - 06/10/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 9)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 9 - 13/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=29)
-    else:
-        st.subheader("Semana 9 - 13/10/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 10)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 10 - 20/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=30)
-    else:
-        st.subheader("Semana 10 - 20/10/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 11)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 11 - 27/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=31)
-    else:
-        st.subheader("Semana 11 - 27/10/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 12)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 12 - 03/11/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=32)
-    else:
-        st.subheader("Semana 12 - 03/11/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 13)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 13 - 10/11/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=33)
-    else:
-        st.subheader("Semana 13 - 10/11/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 14)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 14 - 17/11/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=34)
-    else:
-        st.subheader("Semana 14 - 17/11/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 15)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 15 - 24/11/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=35)
-    else:
-        st.subheader("Semana 15 - 24/11/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 16)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 16 - 01/12/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=36)
-    else:
-        st.subheader("Semana 16 - 01/12/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 17)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 17 - 08/12/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=37)
-    else:
-        st.subheader("Semana 17 - 08/12/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 18)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 18 - 15/12/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=38)
-    else:
-        st.subheader("Semana 18 - 15/12/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 19)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 19 - 22/12/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=39)
-    else:
-        st.subheader("Semana 19 - 22/12/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-with st.container(border=True):
-    dados = get_data_disciplina("Infraestrutura de Redes", 20)
-    if dados and len(dados) > 0:
-        st.subheader("Semana 20 - 29/12/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=40)
-    else:
-        st.subheader("Semana 20 - 29/12/2025", divider="red", anchor=False)
-        st.warning("Ainda não há conteúdo disponível para esta semana.")
