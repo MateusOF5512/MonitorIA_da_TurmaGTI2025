@@ -7,123 +7,138 @@ from Functions.database import *
 from Functions.grok import *
 
 
-if "selected_model" not in st.session_state:
-    st.session_state.selected_model = []
-
-with st.sidebar:
-
-    with st.container(border=True):
-        models = {
-            "groq/compound-mini": {"name": "Gorq | Compound Mini | 09/2023", "tokens": 8192},
-            "groq/compound": {"name": "Gorq | Compound | 09/2023", "tokens": 8192},
-            "openai/gpt-oss-20b": {"name": "OpenAI | GPT OSS 20B | 08/2025", "tokens": 65536},
-            "openai/gpt-oss-120b": {"name": "OpenAI | GPT OSS 120B | 08/2025", "tokens": 65536},
-            "gemma2-9b-it": {"name": "Google | Gemma 2 9B | 09/2023", "tokens": 8192},
-            "llama-3.3-70b-versatile": {"name": "Meta | Llama 3.3 70B | 12/2024", "tokens": 32768},
-            "meta-llama/llama-4-maverick-17b-128e-instruct": {"name": "Meta | Llama 4 Maverick 17B | 04/2025", "tokens": 8192,},
-            "qwen/qwen3-32b": {"name":"Alibaba | Qwen3 32B | 05/2025", "tokens": 16384},
-            "deepseek-r1-distill-llama-70b": {"name": "DeepSeek | R1 Llama 70B | 01/2025", "tokens": 4096}
-        }
-
-        model_options = st.selectbox(
-                "Selecione um Modelo de Linguagem Natural:",
-                options=list(models.keys()),
-                format_func=lambda x: models[x]["name"],
-                index=0
-            )
-
-        if st.session_state.selected_model != model_options:
-            st.session_state.mensagem = []
-            st.session_state.selected_model = model_options
-            st.rerun()
-
-        temperature = st.slider("Selecione a Criatividade do Modelo:",
-                               min_value=0.1, max_value=2.0,
-                               value=0.4, step=0.2)
-
 # --- Interface ---
-st.header("🌐 Infraestrutura de Redes", divider="rainbow", anchor=False)
+st.header("🌐 Infraestrutura de Redes de Computadores", divider="rainbow", anchor=False)
+st.markdown("")
 
+with st.expander("🧠 Como usar o Caderno da Turma!"):
+    st.markdown("""
+    Aqui, você pode visualizar os **cadernos e anotações de todas as semanas e disciplinas do semestre** e contar com o poder do modelo de linguagem **ChatGPT OSS 120B** para gerar **resumos personalizados** dos conteúdos abordados em aula.
+
+    O sistema foi desenvolvido para auxiliar na **revisão e retomada de conteúdos**, especialmente em dias em que o aluno não pôde comparecer à aula. Além disso, é possível **comparar e analisar os cadernos em formato de tabela**, facilitando a identificação dos temas e anotações mais relevantes.
+
+    ---
+
+    #### 📘 **Como usar:**
+    1. Visualize seus cadernos organizados por **semana e disciplina**.  
+    2. Use a coluna **“Resumir”** para selecionar apenas os cadernos e anotações que deseja incluir no resumo.  
+    3. Clique em **“Gerar resumo da aula”** para que o sistema produza uma **síntese automática** com base nas suas seleções.  
+    4. Leia o resumo gerado e utilize-o como **apoio para estudos e revisões**.  
+    5. Você pode repetir o processo a qualquer momento para diferentes semanas ou disciplinas.
+
+    ---
+
+    #### 💡 **Dica:**
+    Quanto mais completas forem suas anotações, mais preciso e útil será o resumo gerado pelo modelo.  
+    Use este recurso para **otimizar seu aprendizado**, revisar conteúdos perdidos e consolidar o conhecimento de todo o semestre.
+    """)
+
+    st.markdown("")
 
 with st.container(border=True):
-    dados_supa1 = get_data_disciplina("Infraestrutura de Redes", 1)
+    dados1 = get_data_disciplina("Infraestrutura de Redes", 1)
 
 
     st.subheader("Semana 1 - 18/08/2025", divider="green", anchor=False)
 
-    df1 = pd.DataFrame(dados_supa1)
+    df1 = pd.DataFrame(dados1)
+    df1["resumir?"] = True
 
-    st.dataframe(df1, use_container_width=True)
+    df1 = df1[["resumir?", "conteudo", "usuario"]]
+
+    st.markdown("Selecione as linhas (cadernos) que deseja incluir no resumo feito pelo ChatGPT:")
+    editor = st.data_editor(
+        df1,
+        hide_index=True,
+        use_container_width=True,
+        key="editor_semana1",
+    )
+
     st.markdown("")
 
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+    col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
         st.markdown("")
     with col2:
-        st.markdown("")
+        resumo1 = st.button("Gerar resumo da aula")
     with col3:
-        resumo = st.button("Resumo da Aula 1")
-    with col4:
-        st.markdown("")
-    with col5:
         st.markdown("")
 
     st.markdown("---")
 
-    if resumo:
+
+    if resumo1:
         try:
-            dados1 = transforma_json(df1)
+            # 🔹 Filtra apenas as linhas com Resumir == True
+            linhas_resumir = editor[editor["resumir?"] == True].drop(columns=["resumir?"])
 
-            # Chamada à IA e Captura da resposta
-            resposta = chat_completion_disciplina(dados1, model_options, temperature)
+            # 🔹 Se nenhuma linha for marcada, mostra aviso
+            if linhas_resumir.empty:
+                st.warning("Nenhuma linha foi selecionada para resumo. Marque ao menos uma linha na coluna 'Resumir'.")
+            else:
+                # Chama a IA com apenas as linhas selecionadas
+                dados1_modelo = transforma_json(linhas_resumir)
+                resposta = chat_completion_disciplina(dados1_modelo)
 
-            # Exibição no Markdown
-            st.subheader("📌 Resumo Gerado pela IA")
-            st.markdown(resposta)
+                # Exibe resultado
+                st.subheader("📌 Resumo gerado pela Inteligência Artificial")
+                st.markdown(resposta)
 
         except Exception as e:
-            st.error(f"Erro ao gerar resposta: {e}")
+            st.error(f"⚠️ Erro ao gerar resposta: {e}")
 
 with st.container(border=True):
 
     dados2 = get_data_disciplina("Infraestrutura de Redes", 2)
-
-    
     if dados2 and len(dados2) > 0:
         # Se retornou algo → divider verde
         st.subheader("Semana 2 - 25/08/2025", divider="green", anchor=False)
-        st.dataframe(dados2, key=22)
+
+        df2 = pd.DataFrame(dados2)
+        df2["resumir"] = True
+
+        df2 = df2[["resumir", "conteudo", "usuario"]]
+
+        st.markdown("Selecione as linhas (cadernos) que deseja incluir no resumo feito pelo ChatGPT:")
+        editor2 = st.data_editor(
+            df2,
+            hide_index=True,
+            use_container_width=True,
+            key="editor_semana2",
+        )
 
         st.markdown("")
 
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        col1, col2, col3 = st.columns([1.5, 1, 1])
         with col1:
             st.markdown("")
         with col2:
-            st.markdown("")
+            resumo2 = st.button("Gerar resumo da aula", key=113)
         with col3:
-            resumo = st.button("Resumo da Aula 2")
-        with col4:
-            st.markdown("")
-        with col5:
             st.markdown("")
 
         st.markdown("---")
 
-        if resumo:
+        if resumo2:
             try:
-                dados2 = transforma_json(dados2)
+                # 🔹 Filtra apenas as linhas com Resumir == True
+                linhas_resumir2 = editor2[editor2["resumir"] == True].drop(columns=["resumir"])
 
-                # Chamada à IA e Captura da resposta
-                resposta = chat_completion_disciplina(dados2, model_options, temperature)
+                # 🔹 Se nenhuma linha for marcada, mostra aviso
+                if linhas_resumir2.empty:
+                    st.warning(
+                        "Nenhuma linha foi selecionada para resumo. Marque ao menos uma linha na coluna 'Resumir'.")
+                else:
+                    # Chama a IA com apenas as linhas selecionadas
+                    dados2_modelo = transforma_json(linhas_resumir2)
+                    resposta2 = chat_completion_disciplina(dados2_modelo)
 
-                # Exibição no Markdown
-                st.subheader("📌 Resumo Gerado pela IA")
-                st.markdown(resposta)
+                    # Exibe resultado
+                    st.subheader("📌 Resumo gerado pela Inteligência Artificial")
+                    st.markdown(resposta2)
 
             except Exception as e:
-                st.error(f"Erro ao gerar resposta: {e}")
-
+                st.error(f"⚠️ Erro ao gerar resposta: {e}")
     else:
         # Se não retornou nada → divider vermelho e mensagem de aviso
         st.subheader("Semana 2 - 25/08/2025", divider="red", anchor=False)
@@ -155,19 +170,6 @@ with st.container(border=True):
             st.markdown("")
 
         st.markdown("---")
-
-        if resumo3:
-            try:
-                dados_json3 = transforma_json(df3)
-
-                # Chamada à IA e Captura da resposta
-                resposta3 = chat_completion_disciplina(dados_json3, model_options, temperature)
-
-                # Exibição no Markdown
-                st.markdown(resposta3)
-
-            except Exception as e:
-                st.error(f"Erro ao gerar resposta: {e}")
 
     else:
         # Se não retornou nada → divider vermelho e mensagem de aviso
@@ -205,91 +207,19 @@ with st.container(border=True):
         st.warning("Ainda não há conteúdo disponível para esta semana.")
 
 with st.container(border=True):
-    dados7 = get_data_disciplina("Infraestrutura de Redes", 7)
-    df7 = pd.DataFrame(dados7)
-
-
-    if dados7 and len(dados7) > 0:
-        # Se retornou algo → divider verde
+    dados = get_data_disciplina("Infraestrutura de Redes", 7)
+    if dados and len(dados) > 0:
         st.subheader("Semana 7 - 29/09/2025", divider="green", anchor=False)
-        st.dataframe(df7, key=327)
-        
-
-        st.markdown("")
-
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-        with col1:
-            st.markdown("")
-        with col2:
-            st.markdown("")
-        with col3:
-            resumo7 = st.button("Resumo da Aula", key="botao_resumo7")
-        with col4:
-            st.markdown("")
-        with col5:
-            st.markdown("")
-
-        st.markdown("---")
-
-        if resumo7:
-            try:
-                dados_json7 = transforma_json(df7)
-
-                # Chamada à IA e Captura da resposta
-                resposta7 = chat_completion_disciplina(dados_json7, model_options, temperature)
-
-                # Exibição no Markdown
-                st.markdown(resposta7)
-
-            except Exception as e:
-                st.error(f"Erro ao gerar resposta: {e}")
-
+        st.dataframe(dados, key=27)
     else:
         st.subheader("Semana 7 - 29/09/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
 
 with st.container(border=True):
-    dados8 = get_data_disciplina("Infraestrutura de Redes", 8)
-    df8 = pd.DataFrame(dados8)
-
-    if dados8 and len(dados8) > 0:
-        # Se retornou algo → divider verde
-        st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
-        st.dataframe(df8, key=377)
-        
-
-        st.markdown("")
-
-        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
-        with col1:
-            st.markdown("")
-        with col2:
-            st.markdown("")
-        with col3:
-            resumo8 = st.button("Resumo da Aula", key="botao_resumo8")
-        with col4:
-            st.markdown("")
-        with col5:
-            st.markdown("")
-
-        st.markdown("---")
-
-        if resumo8:
-            try:
-                dados_json8 = transforma_json(df8)
-
-                # Chamada à IA e Captura da resposta
-                resposta8 = chat_completion_disciplina(dados_json8, model_options, temperature)
-
-                # Exibição no Markdown
-                st.markdown(resposta8)
-
-            except Exception as e:
-                st.error(f"Erro ao gerar resposta: {e}")
-    
+    dados = get_data_disciplina("Infraestrutura de Redes", 8)
     if dados and len(dados) > 0:
         st.subheader("Semana 8 - 06/10/2025", divider="green", anchor=False)
-        st.dataframe(dados, key=248)
+        st.dataframe(dados, key=28)
     else:
         st.subheader("Semana 8 - 06/10/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
@@ -401,6 +331,3 @@ with st.container(border=True):
     else:
         st.subheader("Semana 20 - 29/12/2025", divider="red", anchor=False)
         st.warning("Ainda não há conteúdo disponível para esta semana.")
-
-
-
