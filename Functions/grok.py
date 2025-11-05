@@ -4,7 +4,7 @@ from groq import Groq
 
 client = Groq(api_key=st.secrets["grok"]["GROK_API"])
 
-def chat_completion_disciplina(dados, model_options, temperature):
+def chat_completion_disciplina(dados):
 
     system = f"""
     Você é um assistente acadêmico especializado em compilar e organizar anotações de aulas do curso de Gestão da Tecnologia da Informação, especificamente da disciplina de Infraestrutura de Redes de Computadores. 
@@ -22,12 +22,10 @@ def chat_completion_disciplina(dados, model_options, temperature):
        - **Conclusão do Aprendizado**: Síntese final do que os alunos devem ter compreendido.
     6. Não invente informações que não estejam presentes nas anotações.
     7. Mantenha um tom didático e estruturado, facilitando uma leitura rápida e eficiente.
-
-    Conteúdo em JSON a ser analisado disponivel pelo user:
     """
 
     chat_completion = client.chat.completions.create(
-        model=model_options,
+        model='openai/gpt-oss-120b',
         messages=[
             {
                 "role": "system",
@@ -38,7 +36,7 @@ def chat_completion_disciplina(dados, model_options, temperature):
                 "content": dados
             }
         ],
-        temperature=temperature,
+        temperature=0.1,
         stream=False
     )
 
