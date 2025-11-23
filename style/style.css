@@ -1,1 +1,58 @@
-style
+/* Conteúdo de 'style/style.css' */
+
+/* 1. Limpeza do padding desnecessário e espaçamento do container principal */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+    padding-left: 5rem;
+    padding-right: 5rem;
+}
+
+/* 2. Aplicação da cor de fundo verde (#38a347) e texto branco para a barra superior de menu */
+header {
+    background-color: #38a347 !important;
+    color: white !important;
+}
+header a, header button, header div, header span {
+    color: white !important; /* Garante que links, botões e texto na barra sejam brancos */
+}
+
+/* 3. Centralização de TODOS os títulos (header e subheader) */
+h1, h2, h3 {
+    text-align: center;
+}
+
+/* 5. Estilos de Ícone, Título e Texto (Centralizados) */
+.feature-icon {
+    font-size: 3em;
+    margin-bottom: 10px;
+    color: #38a347;
+    text-align: center;
+}
+.feature-title {
+    font-size: 1.3em;
+    font-weight: 1000;
+    color: #38a347;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.main-header {
+    padding-top: 30px;
+    padding-bottom: 30px;
+}
+/* Estilo para garantir que o texto dos cards de feature também seja centralizado */
+.card-text-center {
+    text-align: center;
+}
+/* Estilos antigos do cache do Streamlit (Mantidos para não quebrar outros elementos) */
+.stApp {
+    background-color: #FFFFFF; /* Fundo cinza claro para contraste */
+}
+.st-emotion-cache-1r6r4v5 > div, .st-emotion-cache-1omgghh > div {
+    transition: transform 0.2s;
+}
+.st-emotion-cache-1r6r4v5 > div:hover, .st-emotion-cache-1omgghh > div:hover {
+    transform: translateY(-5px);
+}
+
+
