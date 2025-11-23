@@ -11,7 +11,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def get_data_disciplina(disciplina, semana_aula):
     response = (
-        supabase.table("conteudo_aulas")
+        supabase.table("caderno")
         .select("conteudo, usuario, semana_aula, data_aula, disciplina")
         .eq("disciplina", disciplina)
         .eq("semana_aula", semana_aula)
