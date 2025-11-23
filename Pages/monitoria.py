@@ -5,7 +5,12 @@ import time
 # ================================================================
 # CONFIGURAÇÃO GERAL
 # ================================================================
-st.set_page_config(page_title="MonitorIA da Turma", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="MonitorIA da Turma", page_icon="🎓", layout="wide")
+
+# 🎨 INJETAR O CSS A PARTIR DO ARQUIVO
+with open("style/style.css", encoding="utf-8") as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 
 # Inicializa variáveis de sessão
 if "mensagens" not in st.session_state:
@@ -16,29 +21,22 @@ if "resposta_agent" not in st.session_state:
 
 # Variáveis auxiliares
 resposta_agent = ''
-elapsed = 0.00
-total_tokens = 0
-prompt_tokens = 0
-completion_tokens = 0
 
 usuario_app = st.session_state.get("usuario_logado", "usuário_teste")
 start_time = 0
 
 # URL do webhook do n8n
-N8N_WEBHOOK_URL = "https://n8n.srv1101373.hstgr.cloud/webhook/monitor-ia"
+N8N_WEBHOOK_URL = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook/monitor-ia"
 
 # ================================================================
 # SIDEBAR
 # ================================================================
-with st.sidebar:
-    st.title("⚙️ Configurações")
-    st.markdown("O chat está conectado ao agente via **n8n**.")
-    st.divider()
-
 # ================================================================
 # CABEÇALHO
 # ================================================================
+st.markdown('<div class="main-header">', unsafe_allow_html=True)
 st.subheader("👨‍🏫 MonitorIA da Turma", divider="rainbow")
+
 
 # ================================================================
 # HISTÓRICO DE MENSAGENS
@@ -83,9 +81,6 @@ if prompt := st.chat_input("Digite sua pergunta para o MonitorIA..."):
 
             # Captura os campos retornados pelo agente
             resposta_agent = data.get("resposta_agent_rag", "⚠️ Nenhuma resposta recebida.")
-            total_tokens = data.get("totalTokens", 0)
-            prompt_tokens = data.get("promptTokens", 0)
-            completion_tokens = data.get("completionTokens", 0)
 
         else:
             resposta_agent = f"⚠️ Erro na resposta do agente: {resposta.status_code}"
@@ -96,23 +91,12 @@ if prompt := st.chat_input("Digite sua pergunta para o MonitorIA..."):
     # ============================================================
     # EXIBE RESPOSTA DO AGENTE
     # ============================================================
-    elapsed = time.time() - start_time
 
     with st.chat_message("assistant", avatar="👨‍🏫"):
         st.markdown(resposta_agent)
 
     st.session_state.mensagens.append({"role": "assistant", "content": resposta_agent})
 
-# ================================================================
-# SIDEBAR: MÉTRICAS
-# ================================================================
-with st.sidebar:
-    st.sidebar.markdown(f"⏱️ Tempo de resposta: {elapsed:.2f}s")
-    st.sidebar.markdown(f"🧮 Total de Tokens: {total_tokens}")
-    st.sidebar.markdown(f"💬 Entrada de Tokens: {prompt_tokens}")
-    st.sidebar.markdown(f"✍️ Saída de Tokens: {completion_tokens}")
-
-    st.divider()
-    if st.button("🔄 Reiniciar conversa"):
-        st.session_state.mensagens = []
-        st.rerun()
+if st.button("🔄 Reiniciar conversa"):
+    st.session_state.mensagens = []
+    st.rerun()
