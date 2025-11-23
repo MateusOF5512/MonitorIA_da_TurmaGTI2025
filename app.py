@@ -69,21 +69,21 @@ def logout():
 
 
 pages = {
-    "Geral": [
+    "⭐ Geral": [
         st.Page("Pages/home.py", title="Página Inicial", icon='🏠'),
         st.Page("Pages/monitoria.py", title="MonitorIA", icon='👨‍🏫'),
-        st.Page("Pages/enviarcaderno.py", title="Enviar Anotações", icon='📚'),
-        st.Page("Pages/dashboard.py", title="Dashboards", icon='📊')
+        st.Page("Pages/enviarcaderno.py", title="Enviar Anotações", icon='📝'),
+        #st.Page("Pages/dashboard.py", title="Dashboards", icon='📊')
     ],
-    "Cadernos": [
-        st.Page("Pages/metodologiadeprojetos.py", title="Métodologia de Projetos", icon='🎯'),
-        st.Page("Pages/gestaoorganizacional.py", title="Gestão Organizacional", icon='🏢'),
-        st.Page("Pages/estatisticaempresarial.py", title="Estatística Empresarial", icon='📈'),
+    "📚 Cadernos 2° Fase": [
+        #st.Page("Pages/metodologiadeprojetos.py", title="Metodologia de Projetos", icon='🎯'),
+        #st.Page("Pages/gestaoorganizacional.py", title="Gestão Organizacional", icon='🏢'),
+        #st.Page("Pages/estatisticaempresarial.py", title="Estatística Empresarial", icon='📈'),
         st.Page("Pages/infraestruturaderedes.py", title="Infraestrutura de Redes", icon='🌐'),
-        st.Page("Pages/processodedesenvolvimentodesistemas.py", title="Proc. e Desv. de Sistemas", icon='⚙️'),
-        st.Page("Pages/qualidadedesoftware.py", title="Qualidade de Software", icon='✅'),
-        st.Page("Pages/sistemaoperacionalwindows.py", title="Sist. Operacional (Windows)", icon='🖱️'),
-        st.Page("Pages/tecnologiadehardware.py", title="Tecnologia de Hardware", icon='🖥️'),
+        #st.Page("Pages/processodedesenvolvimentodesistemas.py", title="Proc. e Desv. de Sistemas", icon='⚙️'),
+        #st.Page("Pages/qualidadedesoftware.py", title="Qualidade de Software", icon='✅'),
+        #st.Page("Pages/sistemaoperacionalwindows.py", title="Sist. Operacional (Windows)", icon='🖱️'),
+        #st.Page("Pages/tecnologiadehardware.py", title="Tecnologia de Hardware", icon='🖥️'),
     ],
 }
 
