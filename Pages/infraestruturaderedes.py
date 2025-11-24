@@ -6,6 +6,7 @@ import json
 # Certifique-se que suas importações locais estão corretas
 from Functions.database import *
 from Functions.grok import *
+from Functions.interface import *
 
 # 🎨 INJETAR O CSS
 try:
@@ -198,3 +199,5 @@ for i in range(1, 8):
     d = data_inicial + timedelta(weeks=(i - 1))
     renderizar_semana(i, d)
     st.markdown("<br>", unsafe_allow_html=True)
+
+criar_rodape()

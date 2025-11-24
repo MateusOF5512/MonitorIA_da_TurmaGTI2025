@@ -1,204 +1,220 @@
 import streamlit as st
 import pandas as pd
+from supabase import create_client
+from datetime import date
 import json
-
+# Certifique-se que suas importações locais estão corretas
 from Functions.database import *
 from Functions.grok import *
+from Functions.interface import *
 
 # ===============================================================
-# CONFIGURAÇÃO INICIAL DO SESSION STATE
+# ⚙️ CONFIGURAÇÕES DA PÁGINA
 # ===============================================================
-if "resumo_gerado" not in st.session_state:
-    st.session_state["resumo_gerado"] = None
 
-if "perguntas" not in st.session_state:
-    st.session_state["perguntas"] = None
+NOME_MATERIA = "Metodologia de Projetos"
+KEY_PREFIX = "metodologia_proj"
 
-if "respostas_usuario" not in st.session_state:
-    st.session_state["respostas_usuario"] = {}
+# Definição MANUAL das datas
+CRONOGRAMA = {
+    1: date(2025, 8, 18),
+    2: date(2025, 8, 25),
+    3: date(2025, 9, 1),
+    4: date(2025, 9, 8),
+    5: date(2025, 9, 15),
+    6: date(2025, 9, 22),
+    7: date(2025, 9, 29),
+}
 
-if "processar_resumo" not in st.session_state:
-    st.session_state["processar_resumo"] = False
+# 🎨 INJETAR O CSS
+try:
+    with open("style/style.css", encoding="utf-8") as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    pass
 
-if "resumo_processado" not in st.session_state:
-    st.session_state["resumo_processado"] = False
-
-
-# ===============================================================
-# FUNÇÃO CALLBACK DO BOTÃO
-# ===============================================================
-def marcar_para_processar():
-    """Marca que o botão foi clicado e deve processar na próxima renderização"""
-    st.session_state["processar_resumo"] = True
-    st.session_state["resumo_processado"] = False
-
-
-# --- Interface ---
-st.subheader("🎯 Metodologia de Projetos", divider="rainbow", anchor=False)
+# --- Interface Geral ---
+st.markdown('<div class="main-header">', unsafe_allow_html=True)
+st.subheader(f"📋 {NOME_MATERIA}", divider="rainbow", anchor=False)
 st.markdown("")
 
-# ===============================================================
-# INSTRUÇÕES DE USO
-# ===============================================================
-with st.expander("🧠 Como usar o Caderno da Turma!"):
-    st.markdown("""
-    Aqui, você pode visualizar os **cadernos e anotações de todas as semanas e disciplinas do semestre** e contar com o poder do modelo de linguagem **ChatGPT OSS 120B** para gerar **resumos personalizados** dos conteúdos abordados em aula.
-
-    O sistema foi desenvolvido para auxiliar na **revisão e retomada de conteúdos**, especialmente em dias em que o aluno não pôde comparecer à aula. Além disso, é possível **comparar e analisar os cadernos em formato de tabela**, facilitando a identificação dos temas e anotações mais relevantes.
-
-    ---
-    #### 📘 **Como usar:**
-    1. Visualize seus cadernos organizados por **semana e disciplina**.  
-    2. Use a coluna **"Resumir"** para selecionar apenas os cadernos e anotações que deseja incluir no resumo.  
-    3. Clique em **"Gerar resumo da aula"** para que o sistema produza uma **síntese automática** com base nas suas seleções.  
-    4. Leia o resumo gerado e utilize-o como **apoio para estudos e revisões**.  
-    5. Você pode repetir o processo a qualquer momento para diferentes semanas ou disciplinas.
-
-    ---
-    #### 💡 **Dica:**
-    Quanto mais completas forem suas anotações, mais preciso e útil será o resumo gerado pelo modelo.  
-    Use este recurso para **otimizar seu aprendizado**, revisar conteúdos perdidos e consolidar o conhecimento de todo o semestre.
+with st.expander(f"❓ Como usar o Caderno de {NOME_MATERIA}"):
+    st.markdown(f"""
+    Aqui, você pode visualizar os **cadernos e anotações da disciplina de {NOME_MATERIA}**.
+    Use os botões para gerar resumos e quizzes interativos baseados nas anotações semanais.
     """)
+    st.markdown("")
+
 
 # ===============================================================
-# BLOCO DE SELEÇÃO DE CADERNOS
+# FUNÇÃO PARA RENDERIZAR UMA SEMANA ESPECÍFICA
 # ===============================================================
-with st.container(border=True):
-    st.subheader("📅 Semana 1 - 18/08/2025", divider="green", anchor=False)
+def renderizar_semana_custom(numero_semana, data_semana):
+    # Identificadores únicos
+    key_resumo = f"resumo_{KEY_PREFIX}_s{numero_semana}"
+    key_perguntas = f"perguntas_{KEY_PREFIX}_s{numero_semana}"
+    key_respostas_user = f"respostas_{KEY_PREFIX}_s{numero_semana}"
 
-    # 🔹 Obter dados da disciplina
-    dados1 = get_data_disciplina("Métodologia de Projetos", 1)
+    # Keys para widgets
+    k_editor = f"editor_{KEY_PREFIX}_s{numero_semana}"
+    k_btn_resumo = f"btn_resumo_{KEY_PREFIX}_s{numero_semana}"
+    k_radio_base = f"radio_{KEY_PREFIX}_s{numero_semana}"
+    k_btn_result = f"btn_result_{KEY_PREFIX}_s{numero_semana}"
+    k_btn_newq = f"btn_newq_{KEY_PREFIX}_s{numero_semana}"
+    k_btn_reset = f"btn_reset_{KEY_PREFIX}_s{numero_semana}"
 
-    if not dados1:
-        st.warning("Nenhum dado encontrado para esta disciplina.")
-    else:
-        df1 = pd.DataFrame(dados1)
+    # Inicializa Session State
+    if key_resumo not in st.session_state:
+        st.session_state[key_resumo] = None
+    if key_perguntas not in st.session_state:
+        st.session_state[key_perguntas] = None
+    if key_respostas_user not in st.session_state:
+        st.session_state[key_respostas_user] = {}
 
-        # Adiciona a coluna 'resumir'
-        df1["resumir"] = True
+    # ===============================================================
+    # BLOCO VISUAL DA SEMANA
+    # ===============================================================
+    with st.container(border=True):
+        # 1. BUSCAR DADOS ANTES DE RENDERIZAR O TÍTULO
+        dados = get_data_disciplina(NOME_MATERIA, numero_semana)
+        data_formatada = data_semana.strftime("%d/%m/%Y")
 
-        # Garante que apenas colunas existentes sejam usadas
-        colunas_validas = [c for c in ["conteudo", "usuario"] if c in df1.columns]
-        if not colunas_validas:
-            st.error("⚠️ Nenhuma coluna válida encontrada no DataFrame (esperado: 'conteudo' e/ou 'usuario').")
+        # 2. EXTRAIR O PLANO DE ENSINO (SE HOUVER DADOS)
+        texto_plano = ""
+        if dados and len(dados) > 0:
+            # Pega o plano do primeiro registro encontrado na semana
+            # Usa .get() para evitar erro se a coluna não vier
+            plano_raw = dados[0].get('plano_de_ensino', '')
+            if plano_raw:
+                texto_plano = f" - {plano_raw}"
+
+        # 3. RENDERIZAR O CABEÇALHO COM O PLANO
+        st.subheader(f"📅 Semana {numero_semana} - {data_formatada}{texto_plano}", divider="green", anchor=False)
+
+        if not dados:
+            st.info(f"Não há anotações cadastradas para a Semana {numero_semana}.")
         else:
-            df1 = df1[["resumir"] + colunas_validas]
+            df = pd.DataFrame(dados)
+            # Verifica colunas essenciais
+            if "conteudo" in df.columns and "usuario" in df.columns:
+                df["resumir"] = True
 
-            st.markdown("Selecione as linhas (cadernos) que deseja incluir no resumo feito pelo ChatGPT:")
+                # Selecionamos apenas as colunas úteis para o editor visual
+                # (Não precisamos mostrar o plano_de_ensino repetido na tabela)
+                df_editor = df[["resumir", "conteudo", "usuario"]]
 
-            editor = st.data_editor(
-                df1,
-                hide_index=True,
-                use_container_width=True,
-                key="editor_semana1"
-            )
+                st.markdown("Selecione os cadernos para o resumo:")
+                editor = st.data_editor(
+                    df_editor,
+                    hide_index=True,
+                    use_container_width=True,
+                    key=k_editor,
+                )
 
-            # ===============================================================
-            # BOTÃO COM CALLBACK
-            # ===============================================================
-            st.button(
-                "Gerar resumo da aula",
-                key="gerar_resumo_btn",
-                use_container_width=True,
-                on_click=marcar_para_processar
-            )
+                # --- Botão de Gerar Resumo ---
+                if st.session_state[key_resumo] is None:
+                    col1, col2, col3 = st.columns([1, 1, 1])
+                    with col2:
+                        if st.button(f"Gerar resumo da semana {numero_semana}", key=k_btn_resumo,
+                                     use_container_width=True):
+                            try:
+                                linhas_resumir = editor[editor["resumir"] == True].drop(columns=["resumir"])
+                                if linhas_resumir.empty:
+                                    st.warning("Selecione ao menos uma linha.")
+                                else:
+                                    with st.spinner(f"Lendo anotações de {NOME_MATERIA}..."):
+                                        dados_modelo = transforma_json(linhas_resumir)
 
-            # ===============================================================
-            # PROCESSAR RESUMO (só executa se o flag estiver ativo)
-            # ===============================================================
-            if st.session_state["processar_resumo"] and not st.session_state["resumo_processado"]:
-                try:
-                    linhas_resumir = editor[editor["resumir"] == True].drop(columns=["resumir"])
+                                        resposta = chat_completion_disciplina(dados_modelo)
+                                        st.session_state[key_resumo] = resposta
 
-                    if linhas_resumir.empty:
-                        st.warning("Nenhuma linha foi selecionada para resumo.")
-                        st.session_state["processar_resumo"] = False
-                    else:
-                        with st.spinner("🤖 Gerando resumo e perguntas..."):
-                            dados1_modelo = transforma_json(linhas_resumir)
-                            resposta = chat_completion_disciplina(dados1_modelo)
+                                        questoes = criar_questoes_com_groq(resposta, NOME_MATERIA)
+                                        if isinstance(questoes, str):
+                                            perguntas = json.loads(questoes)
+                                        else:
+                                            perguntas = questoes
 
-                            # 🔹 Salva no session_state
-                            st.session_state["resumo_gerado"] = resposta
+                                        st.session_state[key_perguntas] = perguntas
+                                        st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro: {e}")
 
-                            # 🔹 Gera 4 perguntas, cada uma com 3 opções
-                            questoes = criar_questoes_com_groq(resposta, 'Metodologia de Projetos')
+                # --- Exibir Resumo e Quiz ---
+                if st.session_state[key_resumo]:
+                    st.success(f"✅ Resumo gerado com sucesso!")
+                    st.markdown(st.session_state[key_resumo])
+                    st.divider()
 
-                            # Converte string JSON em objeto Python, se necessário
-                            if isinstance(questoes, str):
-                                perguntas = json.loads(questoes)
-                            else:
-                                perguntas = questoes
+                if st.session_state[key_perguntas]:
+                    st.subheader(f"🧠 Quiz: {NOME_MATERIA} - S{numero_semana}")
 
-                            # Garante que seja uma lista
-                            if not isinstance(perguntas, list):
-                                raise ValueError("Formato inválido: o retorno não é uma lista JSON.")
+                    respostas_usuario = st.session_state[key_respostas_user]
+                    lista_perguntas = st.session_state[key_perguntas]
 
-                            # Salva no session_state
-                            st.session_state["perguntas"] = perguntas
+                    for i, q in enumerate(lista_perguntas):
+                        with st.expander(f"Questão {i + 1}: {q['pergunta']}", expanded=True):
+                            resposta_salva = respostas_usuario.get(i)
+                            idx = q["opcoes"].index(resposta_salva) if resposta_salva in q["opcoes"] else 0
 
-                            # Limpa respostas anteriores do quiz
-                            st.session_state["respostas_usuario"] = {}
+                            r = st.radio("Alternativas:", q["opcoes"], key=f"{k_radio_base}_{i}", index=idx)
+                            st.session_state[key_respostas_user][i] = r
 
-                            # Marca como processado
-                            st.session_state["resumo_processado"] = True
-                            st.session_state["processar_resumo"] = False
+                    st.markdown("---")
 
-                            # Força re-renderização para mostrar resultados
+                    col1, col2, col3 = st.columns([1, 1, 1])
+
+                    with col1:
+                        if st.button("📊 Ver Resultado", key=k_btn_result, use_container_width=True):
+                            acertos = 0
+                            msg_resultado = []
+                            for i, q in enumerate(lista_perguntas):
+                                u = st.session_state[key_respostas_user].get(i)
+                                if u == q["resposta_correta"]:
+                                    acertos += 1
+                                    msg_resultado.append(f"✅ Q{i + 1}: Correta")
+                                else:
+                                    msg_resultado.append(f"❌ Q{i + 1}: Errada (Correta: {q['resposta_correta']})")
+
+                            nota = round((acertos / len(lista_perguntas)) * 10, 1)
+                            st.toast(f"Nota: {nota}/10")
+                            for msg in msg_resultado:
+                                st.write(msg)
+
+                    with col2:
+                        if st.button("🔄 Novas Perguntas", key=k_btn_newq, use_container_width=True):
+                            with st.spinner("Recriando perguntas..."):
+                                try:
+                                    resumo_atual = st.session_state[key_resumo]
+                                    novas_q = criar_questoes_com_groq(resumo_atual, NOME_MATERIA)
+
+                                    if isinstance(novas_q, str):
+                                        perguntas_novas = json.loads(novas_q)
+                                    else:
+                                        perguntas_novas = novas_q
+
+                                    st.session_state[key_perguntas] = perguntas_novas
+                                    st.session_state[key_respostas_user] = {}
+                                    st.rerun()
+                                except Exception as e:
+                                    st.error(f"Erro ao recriar: {e}")
+
+                    with col3:
+                        if st.button("🎯 Novo Resumo", key=k_btn_reset, use_container_width=True):
+                            st.session_state[key_resumo] = None
+                            st.session_state[key_perguntas] = None
+                            st.session_state[key_respostas_user] = {}
                             st.rerun()
 
-                except Exception as e:
-                    st.error(f"⚠️ Erro ao gerar resposta: {e}")
-                    st.session_state["processar_resumo"] = False
+            else:
+                st.warning("Erro na estrutura dos dados recuperados do banco.")
 
-    # ===============================================================
-    # EXIBIR RESUMO
-    # ===============================================================
-    if st.session_state["resumo_gerado"]:
-        st.success("✅ Resumo gerado com sucesso!")
-        st.subheader("📘 Resumo gerado pelo ChatGPT OpenIA")
-        st.markdown(st.session_state["resumo_gerado"])
 
-    # ===============================================================
-    # EXIBIR QUIZ
-    # ===============================================================
-    if st.session_state["perguntas"]:
-        st.success("✅ Perguntas geradas com sucesso!")
-        st.markdown("---")
-        st.subheader("🧠 Perguntas para fixação e revisão - Quiz Interativo")
+# ===============================================================
+# LOOP GERAL BASEADO NO CRONOGRAMA
+# ===============================================================
+for semana_num, data_definida in CRONOGRAMA.items():
+    renderizar_semana_custom(semana_num, data_definida)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        respostas_usuario = st.session_state["respostas_usuario"]
 
-        for i, q in enumerate(st.session_state["perguntas"]):
-            with st.expander(q["pergunta"]):
-                resposta_salva = respostas_usuario.get(i)
-                if resposta_salva in q["opcoes"]:
-                    index_inicial = q["opcoes"].index(resposta_salva)
-                else:
-                    index_inicial = 0
-
-                resposta = st.radio(
-                    "Selecione uma alternativa correta:",
-                    q["opcoes"],
-                    key=f"q{i}",
-                    index=index_inicial
-                )
-                st.session_state["respostas_usuario"][i] = resposta
-
-        if st.button("Ver resultado", key="resultado_semana1", use_container_width=True):
-            acertos = 0
-            resultado_detalhado = []
-
-            for i, q in enumerate(st.session_state["perguntas"]):
-                correta = q["resposta_correta"]
-                usuario = st.session_state["respostas_usuario"].get(i)
-                if usuario == correta:
-                    acertos += 1
-                    resultado_detalhado.append(f"✅ Questão {i + 1}: Correta!")
-                else:
-                    resultado_detalhado.append(f"❌ Questão {i + 1}: Errada. Resposta certa: {correta}")
-
-            nota_final = round((acertos / len(st.session_state["perguntas"])) * 10, 1)
-            st.markdown("---")
-            st.subheader(f"🏁 Sua nota: **{nota_final}/10**")
-            st.write("\n".join(resultado_detalhado))
+criar_rodape()

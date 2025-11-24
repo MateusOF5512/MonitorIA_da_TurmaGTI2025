@@ -26,7 +26,7 @@ usuario_app = st.session_state.get("usuario_logado", "usuário_teste")
 start_time = 0
 
 # URL do webhook do n8n
-N8N_WEBHOOK_URL = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook/monitor-ia"
+N8N_WEBHOOK_URL = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook-test/monitor-ia"
 
 # ================================================================
 # SIDEBAR
@@ -100,3 +100,4 @@ if prompt := st.chat_input("Digite sua pergunta para o MonitorIA..."):
 if st.button("🔄 Reiniciar conversa"):
     st.session_state.mensagens = []
     st.rerun()
+

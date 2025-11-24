@@ -1,4 +1,5 @@
 import streamlit as st
+from Functions.interface import *
 
 # 🛠️ Configuração Inicial da Página
 st.set_page_config(
@@ -112,5 +113,4 @@ with col4:
     * **Inteligência Artificial (LLM):** Groq e ChatGPT
     """)
 
-st.markdown('')
-st.write("---")
+criar_rodape()

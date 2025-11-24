@@ -1,17 +1,167 @@
-from datetime import date
+from datetime import date, timedelta
 import json
-from Functions.database import *
-from Functions.grok import *
+# Importações de Functions.database e Functions.grok mantidas, mas sem uso direto neste snippet.
+# from Functions.database import *
+# from Functions.grok import *
 import pdfplumber
 import requests
+import streamlit as st  # Streamlit precisa ser importado
+
+from Functions.interface import *
+
+# ===============================================================
+# DADOS E CONFIGURAÇÕES DE CONTEÚDO (ESTRUTURA REFATORADA)
+# ===============================================================
+
+# --- Dados brutos de Conteúdo (AGORA INCLUINDO A DATA ESPECÍFICA dd/mm PARA CADA TÓPICO) ---
+# O formato interno é: [ (data_ddmm, 'Conteúdo'), ... ]
+raw_conteudos_por_disciplina = {
+    'Estatística Empresarial': [
+        ('18/08', 'Análise de Variância (ANOVA)'),
+        ('25/08', 'Regressão Linear Múltipla'),
+        ('01/09', 'Testes de Hipóteses'),
+        ('08/09', 'Séries Temporais'),
+        ('15/09', 'Amostragem e Distribuição')
+    ],
+    'Gestão Organizacional': [
+        ('19/08', 'Cultura e Clima Organizacional'),
+        ('26/08', 'Liderança e Motivação'),
+        ('02/09', 'Estrutura e Design Organizacional'),
+        ('09/09', 'Tomada de Decisão'),
+        ('16/09', 'Gestão de Mudanças')
+    ],
+    'Infraestrutura de Redes': [
+        ('20/08', 'Protocolos TCP/IP'),
+        ('27/08', 'Roteamento e Switching'),
+        ('03/09', 'Segurança de Redes (Firewalls)'),
+        ('10/09', 'Redes Sem Fio (Wi-Fi)'),
+        ('17/09', 'Endereçamento IP (IPv4 e IPv6)')
+    ],
+    'Metodologia de Projetos': [
+        ('18/08', 'Introdução a projetos: conceitos'),
+        ('25/08', 'Gestão de Projetos'),
+        ('08/09', 'Desempenho do Planejamento'),
+        ('15/09', 'Ferramentas Clássicas de Projetos'),
+        ('13/10', 'Etapas do Projeto'),
+        ('28/10', 'Metodologias ágeis (Scrum)'),
+        ('03/11', 'Softwares para Gestão de Projetos'),
+    ],
+    'Processo e Desv. de Sistemas': [
+        ('22/08', 'Modelagem UML'),
+        ('29/08', 'Análise de Requisitos'),
+        ('05/09', 'Ciclo de Vida do Software'),
+        ('12/09', 'Design Patterns'),
+        ('19/09', 'Testes e Validação')
+    ],
+    'Qualidade de Software': [
+        ('23/08', 'Testes Unitários e Integração'),
+        ('30/08', 'Métricas de Qualidade'),
+        ('06/09', 'Melhoria Contínua (CMMI)'),
+        ('13/09', 'Revisão de Código (Code Review)'),
+        ('20/09', 'Automação de Testes')
+    ],
+    'Sist. Operacional (Windows)': [
+        ('24/08', 'Gerenciamento de Processos'),
+        ('31/08', 'Sistema de Arquivos NTFS'),
+        ('07/09', 'PowerShell e Scripting'),
+        ('14/09', 'Segurança e Permissões'),
+        ('21/09', 'Virtualização')
+    ],
+    'Tecnologia de Hardware': [
+        ('25/08', 'Arquitetura de Computadores (CPU, Memória)'),
+        ('01/09', 'Dispositivos de Armazenamento (SSD, HDD)'),
+        ('08/09', 'Placas-Mãe e Chipsets'),
+        ('15/09', 'Periféricos e Interfaces'),
+        ('22/09', 'Manutenção Preventiva')
+    ],
+}
+disciplinas = list(raw_conteudos_por_disciplina.keys())
+primeira_disciplina = disciplinas[0]
+
+# --- Variável global para a data base (para inferir o ano) ---
+START_YEAR = 2025  # O ano é fixo para permitir a conversão de dd/mm para YYYY-MM-DD
+
+
+# --- Função para estruturar os dados com Semana e Data (AGORA DINÂMICA) ---
+def generate_content_structure(raw_contents_with_dates):
+    """
+    Associa cada conteúdo a uma semana (1 a N) e USA a data fornecida na lista.
+    """
+    structured_contents = []
+    # raw_contents_with_dates é uma lista de tuplas (data_ddmm, content)
+    for i, (formatted_date_ddmm, content) in enumerate(raw_contents_with_dates):
+        # Objeto que será armazenado na session_state para ser usado no selectbox
+        structured_contents.append({
+            'week': i + 1,
+            'date': formatted_date_ddmm,  # Data no formato dd/mm para a UI
+            'content': content,
+            # Label formatado para o usuário: [Semana] - [Data dd/mm] - [Conteúdo]
+            'label': f"{i + 1} - {formatted_date_ddmm} - {content}"
+        })
+    return structured_contents
+
+
+# --- Dicionário final estruturado com as informações de Semana e Data ---
+# Este dicionário contém uma lista de objetos para cada disciplina.
+conteudos_por_disciplina = {
+    disc: generate_content_structure(raw_list)
+    for disc, raw_list in raw_conteudos_por_disciplina.items()
+}
+
+
+# ------------------- FUNÇÃO DE CONVERSÃO INTERNA (BACKEND) -------------------
+
+def convert_ddmm_to_iso(ddmm_str, year=START_YEAR):
+    """Converte 'dd/mm' para o formato 'YYYY-MM-DD'."""
+    try:
+        day, month = map(int, ddmm_str.split('/'))
+        # Usa o ano fixo (START_YEAR) para montar o formato ISO
+        return date(year, month, day).strftime('%Y-%m-%d')
+    except ValueError:
+        # Em caso de falha na conversão
+        st.error(f"Erro de formato de data: '{ddmm_str}'. Não foi possível converter para YYYY-MM-DD.")
+        return str(date.today())  # Retorna a data de hoje como fallback
+
+
+# ------------------- FUNÇÕES PARA CALLBACKS -------------------
+
+def update_text_content_options():
+    """Atualiza a lista de conteúdos para a aba de Texto."""
+    disc_selecionada = st.session_state.disc_text_key
+    # Pega os objetos de conteúdo da disciplina selecionada
+    conteudos_objs = conteudos_por_disciplina.get(disc_selecionada, [])
+    # Extrai apenas os 'labels' formatados para o selectbox
+    st.session_state.conteudos_text_labels = [obj['label'] for obj in conteudos_objs]
+
+    # Garante que o conteúdo selecionado é o primeiro da nova lista
+    if st.session_state.conteudos_text_labels:
+        st.session_state.content_text_key = st.session_state.conteudos_text_labels[0]
+    else:
+        st.session_state.content_text_key = ""
+
+
+def update_pdf_content_options():
+    """Atualiza a lista de conteúdos para a aba de PDF."""
+    disc_selecionada = st.session_state.disc_pdf_key
+    # Pega os objetos de conteúdo da disciplina selecionada
+    conteudos_objs = conteudos_por_disciplina.get(disc_selecionada, [])
+    # Extrai apenas os 'labels' formatados para o selectbox
+    st.session_state.conteudos_pdf_labels = [obj['label'] for obj in conteudos_objs]
+
+    # Garante que o conteúdo selecionado é o primeiro da nova lista
+    if st.session_state.conteudos_pdf_labels:
+        st.session_state.content_pdf_key = st.session_state.conteudos_pdf_labels[0]
+    else:
+        st.session_state.content_pdf_key = ""
 
 
 # ------------------- FUNÇÕES (MANTIDAS) -------------------
 
 def extract_text_from_pdf(uploaded_file):
-    """
-    Extrai texto de PDF usando pdfplumber
-    """
+    """Extrai texto de PDF usando pdfplumber"""
+    if isinstance(uploaded_file, str):
+        return f"Texto simulado de: {uploaded_file}"
+
     with pdfplumber.open(uploaded_file) as pdf:
         text = ""
         for page in pdf.pages:
@@ -22,9 +172,6 @@ def extract_text_from_pdf(uploaded_file):
 
 
 def enviar_n8n(dados):
-    """
-    Envia dados para webhook n8n (teste + produção)
-    """
 
     WEBHOOK_URLS = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook-test/caderno-turma"
     response = requests.post(WEBHOOK_URLS, json=dados)
@@ -32,6 +179,7 @@ def enviar_n8n(dados):
         st.success("✅ Dados enviados com sucesso (TESTE)!")
         return None
 
+    # Caso a primeira tentativa falhe (mantido da lógica original)
     if response.status_code != 200:
         WEBHOOK_URLS2 = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook/caderno-turma"
         response = requests.post(WEBHOOK_URLS2, json=dados)
@@ -49,34 +197,58 @@ def enviar_n8n(dados):
 st.set_page_config(page_title="Envio de Caderno", page_icon="📚", layout="wide")
 
 # 🎨 INJETAR O CSS A PARTIR DO ARQUIVO (BLOQUEIO DE ERROS INESPERADOS)
-try:
-    with open("style/style.css", encoding="utf-8") as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-except FileNotFoundError:
-    st.warning("⚠️ Arquivo CSS não encontrado em 'style/style.css'. Estilos não aplicados.")
-except Exception as e:
-    st.warning(f"⚠️ Erro ao carregar CSS: {e}")
-# Fim da injeção de CSS
+custom_css = """
+.main-header {
+    padding-bottom: 20px;
+}
+.stTabs [data-baseweb="tab-list"] {
+    gap: 15px;
+}
+.stTabs [data-baseweb="tab"] {
+    font-size: 18px;
+    padding: 10px 15px;
+    border-radius: 8px 8px 0 0;
+}
+"""
+st.markdown(f'<style>{custom_css}</style>', unsafe_allow_html=True)
 
 # ===============================================================
-# DADOS GLOBAIS
+# DADOS GLOBAIS E INICIALIZAÇÃO DO ESTADO
 # ===============================================================
 usuario = st.session_state.get("usuario_logado", "Usuário desconhecido")
 data_upload = date.today()
-disciplinas = [
-    'Estatística Empresarial',
-    'Gestão Organizacional',
-    'Infraestrutura de Redes',
-    'Metodologia de Projetos',
-    'Processo e Desv. de Sistemas',
-    'Qualidade de Software',
-    'Sist. Operacional (Windows)',
-    'Tecnologia de Hardware',
-]
+
+# --- Inicialização de Session State para Reatividade (usando os labels formatados) ---
+
+initial_content_objs = conteudos_por_disciplina[primeira_disciplina]
+initial_labels = [obj['label'] for obj in initial_content_objs]
+
+# Aba de Texto
+if 'disc_text_key' not in st.session_state:
+    st.session_state.disc_text_key = primeira_disciplina
+if 'conteudos_text_labels' not in st.session_state:
+    st.session_state.conteudos_text_labels = initial_labels
+if 'content_text_key' not in st.session_state:
+    st.session_state.content_text_key = initial_labels[0] if initial_labels else ""
+
+# Aba de PDF
+if 'disc_pdf_key' not in st.session_state:
+    st.session_state.disc_pdf_key = primeira_disciplina
+if 'conteudos_pdf_labels' not in st.session_state:
+    st.session_state.conteudos_pdf_labels = initial_labels
+if 'content_pdf_key' not in st.session_state:
+    st.session_state.content_pdf_key = initial_labels[0] if initial_labels else ""
+
+# --- Estado de Upload de PDF (Mantido) ---
+if 'extracted_text_pdf' not in st.session_state:
+    st.session_state.extracted_text_pdf = ""
+if 'uploaded_file_pdf_name' not in st.session_state:
+    st.session_state.uploaded_file_pdf_name = ""
+if 'feedback_message' not in st.session_state:
+    st.session_state.feedback_message = None
 
 # ------------------- INTERFACE PRINCIPAL -------------------
 
-# O CSS aplicado acima garantirá que este título seja estilizado
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
 st.subheader("📝 Enviar Anotações e Cadernos para Base de Dados", divider="rainbow")
 
@@ -104,8 +276,7 @@ with st.expander("❓ Como enviar os cadernos, anotações, livros e slides."):
         | Parâmetro | Descrição e Importância |
         | :--- | :--- |
         | **Disciplina** | **CRÍTICO:** Define a matéria principal para consulta. |
-        | **Semana da Aula** | **CRÍTICO:** O número da semana (ex: 1 a 20) do semestre. Esta é a **principal chave** para a IA organizar e recuperar as anotações. |
-        | **Data da Aula** | A data específica em que o conteúdo foi lecionado (contexto adicional). |
+        | **Conteúdo Específico** | **CRÍTICO:** O tópico exato da aula, que **já inclui a Semana da Aula e a Data** para indexação. |
 
         Após preencher os dados e inserir o conteúdo (por texto ou PDF), clique em **'Adicionar no Banco'** para salvar o material no seu banco de dados pessoal.
         """
@@ -122,98 +293,114 @@ with st.expander("❓ Como enviar os cadernos, anotações, livros e slides."):
     )
     st.divider()
 
-# 🌟 NOVO: Uso de st.tabs para um design mais limpo
-tab_pdf, tab_text = st.tabs(["📄 Upload de PDF", "✍️Texto (Copia e Cola)",])
+tab_pdf, tab_text = st.tabs(["📄 Upload de PDF", "✍️Texto (Copia e Cola)", ])
 
 # ===============================================================
-# TAB 1: TEXTO COPIA E COLA (Com st.form)
+# TAB 1: TEXTO COPIA E COLA
 # ===============================================================
 with tab_text:
     st.subheader("✍️Inserir Anotações Manualmente")
 
-    with st.form("form_text_manual", clear_on_submit=True):
-        st.error("Preencher os **parâmetros** abaixo com atenção!")
+    st.error("Preencher os **parâmetros** abaixo com atenção!")
 
-        # Uso de colunas para organizar os campos em uma linha
-        col1_t, col2_t, col3_t = st.columns([1, 1, 1])
-        with col1_t:
-            data_aula = st.date_input(
-                "Data da Aula",
-                value=data_upload,
-                key="date_text",
-                help="A data em que o conteúdo foi lecionado."  # help adicionado
-            )
-        with col2_t:
-            semana_aula = st.number_input(
-                "Semana da Aula",
-                min_value=1,
-                max_value=20,
-                step=1,
-                value=1,
-                key="week_text",
-                help="Número da semana do semestre em que esta aula ocorreu (ex: 1 a 20)."  # help adicionado
-            )
-        with col3_t:
-            disciplina = st.selectbox(
-                "Selecione a Disciplina",
-                options=disciplinas,
-                key="disc_text",
-                help="Disciplina relacionada ao conteúdo deste caderno."  # help adicionado
-            )
-
-        st.markdown("##### Conteúdo em Texto")
-        conteudo = st.text_area(
-            "Cole o conteúdo do caderno/anotações aqui:",
-            placeholder="Cole aqui seu texto da sua anotação/caderno aqui...",
-            height=300,
-            key="conteudo_text",
-            help="Copie e cole aqui o texto integral das anotações ou resumo da aula."  # help adicionado
+    # Layout com apenas uma linha para Disciplina e Conteúdo
+    col3_t, col4_t = st.columns(2)
+    with col3_t:
+        # Disciplina (com on_change para atualizar o Conteúdo)
+        st.selectbox(
+            "Selecione a Disciplina",
+            options=disciplinas,
+            key="disc_text_key",
+            on_change=update_text_content_options,
+            help="Disciplina relacionada ao conteúdo deste caderno."
+        )
+    with col4_t:
+        # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
+        st.selectbox(
+            "Selecione o Conteúdo (Semana - Data - Tópico)",
+            options=st.session_state.conteudos_text_labels,
+            key="content_text_key",
+            help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
         )
 
-        st.markdown("---")
-        submitted = st.form_submit_button("📤 Adicionar no Banco", type="primary")
+    st.markdown("##### Conteúdo em Texto")
+    st.text_area(
+        "Cole o conteúdo do caderno/anotações aqui:",
+        placeholder="Cole aqui seu texto da sua anotação/caderno aqui...",
+        height=300,
+        key="conteudo_text",
+        help="Copie e cole aqui o texto integral das anotações ou resumo da aula."
+    )
 
-        if submitted:
-            if conteudo.strip() == "":
-                st.warning("📌 O conteúdo não pode estar vazio. Cole suas anotações antes de enviar.")
-            else:
-                dados = {
-                    "conteudo": conteudo,
-                    "usuario": usuario,
-                    "data_upload": str(data_upload),
-                    "data_aula": str(data_aula),
-                    "semana_aula": int(semana_aula),
-                    "disciplina": disciplina
-                }
-                enviar_n8n(dados)
+    st.markdown("---")
+
+    # Botão de envio
+    if st.button("📤 Adicionar no Banco", key="submit_text", type="primary"):
+
+        disc_selecionada = st.session_state.disc_text_key
+        conteudo_input = st.session_state.conteudo_text
+        cont_selecionado_completo = st.session_state.content_text_key
+
+        if conteudo_input.strip() == "":
+            st.warning("📌 O conteúdo não pode estar vazio. Cole suas anotações antes de enviar.")
+        elif not cont_selecionado_completo:
+            st.warning("📌 Selecione um Conteúdo Específico antes de enviar.")
+        else:
+            try:
+                # Extração 'backend-only': Separa Semana, Data (dd/mm) e Conteúdo do string selecionado
+                # A função split(' - ', 2) garante que o conteúdo específico pode conter hífens ou ' - '
+                week_str, date_str_ddmm, conteudo_especifico = cont_selecionado_completo.split(' - ', 2)
+                semana_aula = int(week_str)
+                # CONVERSÃO INTERNA (BACKEND-ONLY)
+                data_aula_iso = convert_ddmm_to_iso(date_str_ddmm)
+
+            except ValueError:
+                st.error(
+                    "❌ Erro ao extrair o número da semana, data e conteúdo selecionado. Verifique o formato. String de conteúdo: " + cont_selecionado_completo)
+                # st.stop() # Comentei st.stop para que o Streamlit possa re-renderizar a mensagem de erro
+
+            dados = {
+                "conteudo": conteudo_input,
+                "usuario": usuario,
+                "data_upload": str(data_upload),
+                "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
+                "semana_aula": semana_aula,
+                "disciplina": disc_selecionada,
+                "conteudo_especifico": conteudo_especifico
+            }
+            enviar_n8n(dados)
+            # Opcional: Limpar o text_area após o envio
 
 # ===============================================================
-# TAB 2: PDF UPLOAD (Com st.form e lógica corrigida)
+# TAB 2: PDF UPLOAD
 # ===============================================================
-if 'extracted_text_pdf' not in st.session_state:
-    st.session_state.extracted_text_pdf = ""
-if 'uploaded_file_pdf_name' not in st.session_state:
-    st.session_state.uploaded_file_pdf_name = ""
-if 'feedback_message' not in st.session_state:
-    st.session_state.feedback_message = None  # Novo estado para feedback
 
 with tab_pdf:
     with st.container(border=True):
         st.subheader("📄 Extrair e Enviar Conteúdo de Arquivo PDF")
 
-        # 1. Parâmetros (Fora do formulário de envio final para manter o estado)
+        # 1. Parâmetros
         st.error("Preencher os **parâmetros** abaixo com atenção!")
 
-        col1_p, col2_p, col3_p = st.columns([1, 1, 1])
-        with col1_p:
-            data_aula = st.date_input("Data da Aula", value=data_upload, key="date_pdf",
-                                      help="A data em que o conteúdo foi lecionado.")
-        with col2_p:
-            semana_aula = st.number_input("Semana da Aula", min_value=1, max_value=20, step=1, value=1, key="week_pdf",
-                                          help="Número da semana do semestre em que esta aula ocorreu (ex: 1 a 20).")
+        # Layout com apenas uma linha para Disciplina e Conteúdo
+        col3_p, col4_p = st.columns(2)
         with col3_p:
-            disciplina = st.selectbox("Selecione a Disciplina", options=disciplinas, key="disc_pdf",
-                                      help="Disciplina relacionada ao conteúdo deste caderno.")
+            # Disciplina (com on_change para atualizar o Conteúdo)
+            st.selectbox(
+                "Selecione a Disciplina",
+                options=disciplinas,
+                key="disc_pdf_key",
+                on_change=update_pdf_content_options,
+                help="Disciplina relacionada ao conteúdo deste caderno."
+            )
+        with col4_p:
+            # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
+            st.selectbox(
+                "Selecione o Conteúdo (Semana - Data - Tópico)",
+                options=st.session_state.conteudos_pdf_labels,
+                key="content_pdf_key",
+                help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
+            )
 
         st.markdown("#### Seleção do Arquivo")
 
@@ -228,16 +415,15 @@ with tab_pdf:
 
             if uploaded_file is not None and uploaded_file.name != st.session_state.uploaded_file_pdf_name:
                 try:
+                    # NOTA: O pdfplumber requer um objeto de arquivo aberto.
                     extracted_text = extract_text_from_pdf(uploaded_file)
                     st.session_state.extracted_text_pdf = extracted_text
                     st.session_state.uploaded_file_pdf_name = uploaded_file.name
-                    # Armazenar feedback no estado para ser exibido no próximo ciclo de execução
                     st.session_state.feedback_message = {
                         "type": "success",
                         "text": f"✅ Texto extraído de {uploaded_file.name} com sucesso! Verifique a prévia abaixo."
                     }
                 except Exception as e:
-                    # Se houver erro, limpa o texto e armazena a mensagem de erro
                     st.session_state.extracted_text_pdf = ""
                     st.session_state.uploaded_file_pdf_name = ""
                     st.session_state.feedback_message = {
@@ -252,7 +438,7 @@ with tab_pdf:
         uploaded_file_obj = st.file_uploader(
             "Selecione o arquivo PDF com conteúdo da aula (O texto será extraído automaticamente):",
             type=["pdf"],
-            key="file_pdf_uploader",  # Chave para acessar o objeto do uploader
+            key="file_pdf_uploader",
             on_change=handle_pdf_upload
         )
 
@@ -261,7 +447,6 @@ with tab_pdf:
 
         # Exibir feedback de sucesso/erro da extração
         if st.session_state.feedback_message:
-            # Usar um container para a mensagem ser temporária
             if st.session_state.feedback_message["type"] == "success":
                 st.success(st.session_state.feedback_message["text"])
             elif st.session_state.feedback_message["type"] == "error":
@@ -271,51 +456,58 @@ with tab_pdf:
             st.markdown("---")
             # Exibir prévia do texto extraído para confirmação
             with st.expander(f"✅ Prévia do Conteúdo Extraído de: **{st.session_state.uploaded_file_pdf_name}**"):
-                # Limita a prévia para não poluir
                 st.markdown(extracted_text[:5000] + (
                     "\n\n*(... Conteúdo cortado na prévia. O texto COMPLETO será enviado para o banco de dados.)*" if len(
                         extracted_text) > 5000 else ""))
 
-            # 4. Formulário de Submissão Final (Botão para envio)
-            with st.form("form_pdf_submit", clear_on_submit=False):
-                st.markdown("#### Confirmação de Envio")
-                st.info(
-                    "⚠️ Ao clicar no botão abaixo, o texto extraído será enviado para a fila de processamento da MonitorIA (Supabase/n8n).")
+            # 4. Botão de Submissão Final
+            st.markdown("#### Confirmação de Envio")
+            st.info(
+                "⚠️ Ao clicar no botão abaixo, o texto extraído será enviado para a fila de processamento da MonitorIA (Supabase/n8n).")
 
-                submitted_pdf = st.form_submit_button("📤 Adicionar no Banco", type="primary")
+            if st.button("📤 Adicionar no Banco", key="submit_pdf", type="primary"):
 
-                if submitted_pdf:
-                    if extracted_text.strip() == "":
-                        st.error("⚠️ Nenhum texto encontrado para enviar. Por favor, carregue um PDF válido.")
-                    else:
-                        # Preparar e enviar dados
-                        with st.spinner("🚀 Enviando para o Banco de Dados (Supabase/n8n)..."):
-                            dados = {
-                                "conteudo": extracted_text,  # O texto COMPLETO está aqui
-                                "usuario": usuario,
-                                "data_upload": str(data_upload),
-                                "data_aula": str(data_aula),
-                                "semana_aula": int(semana_aula),
-                                "disciplina": disciplina,
-                            }
-                            # Supondo que 'enviar_n8n' é sua função de envio
-                            enviar_n8n(dados)
-                            # Feedback de sucesso do envio
-                            st.success(
-                                f"🎉 Conteúdo de '{st.session_state.uploaded_file_pdf_name}' enviado com sucesso para processamento!")
+                # Usa os valores armazenados no session_state
+                disc_selecionada = st.session_state.disc_pdf_key
+                cont_selecionado_completo = st.session_state.content_pdf_key
+                extracted_text_to_send = st.session_state.extracted_text_pdf  # Pega o texto completo
 
-                        # Limpar TODOS os estados, incluindo a mensagem de feedback.
-                        st.session_state.extracted_text_pdf = ""
-                        st.session_state.uploaded_file_pdf_name = ""
-                        st.session_state.feedback_message = None  # Limpa a mensagem após o envio final
-                        # REMOÇÃO DO st.rerun() MANTIDA
+                if extracted_text_to_send.strip() == "":
+                    st.error("⚠️ Nenhum texto encontrado para enviar. Por favor, carregue um PDF válido.")
+                elif not cont_selecionado_completo:
+                    st.warning("📌 Selecione um Conteúdo Específico antes de enviar.")
+                else:
+                    try:
+                        # Extração 'backend-only': Separa Semana, Data (dd/mm) e Conteúdo do string selecionado
+                        week_str, date_str_ddmm, conteudo_especifico = cont_selecionado_completo.split(' - ', 2)
+                        semana_aula = int(week_str)
+                        # CONVERSÃO INTERNA (BACKEND-ONLY)
+                        data_aula_iso = convert_ddmm_to_iso(date_str_ddmm)
+
+                    except ValueError:
+                        st.error(
+                            "❌ Erro ao extrair o número da semana, data e conteúdo selecionado. Verifique o formato. String de conteúdo: " + cont_selecionado_completo)
+                        # st.stop()
+
+                    # Preparar e enviar dados
+                    with st.spinner("🚀 Enviando para o Banco de Dados (Supabase/n8n)..."):
+                        dados = {
+                            "conteudo": extracted_text_to_send,  # Variável para o texto
+                            "usuario": usuario,
+                            "data_upload": str(data_upload),
+                            "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
+                            "semana_aula": semana_aula,  # Variável para o número da semana
+                            "disciplina": disc_selecionada,
+                            "conteudo_especifico": conteudo_especifico
+                        }
+                        enviar_n8n(dados)
+
+                    # Limpar estados após o envio final
+                    st.session_state.extracted_text_pdf = ""
+                    st.session_state.uploaded_file_pdf_name = ""
+                    st.session_state.feedback_message = None
         elif uploaded_file_obj is not None:
-            # Caso em que o uploaded_file_obj não é None, mas extracted_text_pdf é vazio (erro de extração)
-            # O feedback_message já deve ter sido setado no on_change se houve erro.
-            if st.session_state.extracted_text_pdf == "" and st.session_state.feedback_message and \
-                    st.session_state.feedback_message["type"] == "error":
-                # A mensagem de erro será exibida no topo do container.
-                pass
-            elif st.session_state.extracted_text_pdf == "":
-                # Se for None, significa que o arquivo foi limpo ou o on_change não disparou corretamente.
-                pass
+            # Exibe mensagem de erro se a extração falhou
+            pass
+
+criar_rodape()
