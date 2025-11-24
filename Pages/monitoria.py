@@ -26,7 +26,8 @@ usuario_app = st.session_state.get("usuario_logado", "usuário_teste")
 start_time = 0
 
 # URL do webhook do n8n
-N8N_WEBHOOK_URL = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook-test/monitor-ia"
+
+N8N_WEBHOOK_URL = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook/monitor-ia"
 
 # ================================================================
 # SIDEBAR

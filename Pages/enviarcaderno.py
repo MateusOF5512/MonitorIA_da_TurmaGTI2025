@@ -9,33 +9,29 @@ import streamlit as st  # Streamlit precisa ser importado
 
 from Functions.interface import *
 
-# ===============================================================
-# DADOS E CONFIGURAÇÕES DE CONTEÚDO (ESTRUTURA REFATORADA)
-# ===============================================================
 
-# --- Dados brutos de Conteúdo (AGORA INCLUINDO A DATA ESPECÍFICA dd/mm PARA CADA TÓPICO) ---
-# O formato interno é: [ (data_ddmm, 'Conteúdo'), ... ]
 raw_conteudos_por_disciplina = {
-    'Estatística Empresarial': [
-        ('18/08', 'Análise de Variância (ANOVA)'),
-        ('25/08', 'Regressão Linear Múltipla'),
-        ('01/09', 'Testes de Hipóteses'),
-        ('08/09', 'Séries Temporais'),
-        ('15/09', 'Amostragem e Distribuição')
-    ],
-    'Gestão Organizacional': [
-        ('19/08', 'Cultura e Clima Organizacional'),
-        ('26/08', 'Liderança e Motivação'),
-        ('02/09', 'Estrutura e Design Organizacional'),
-        ('09/09', 'Tomada de Decisão'),
-        ('16/09', 'Gestão de Mudanças')
-    ],
+    #'Estatística Empresarial': [
+    #    ('18/08', 'Análise de Variância (ANOVA)'),
+    #    ('25/08', 'Regressão Linear Múltipla'),
+    #    ('01/09', 'Testes de Hipóteses'),
+    #    ('08/09', 'Séries Temporais'),
+    #    ('15/09', 'Amostragem e Distribuição')
+    #],
+    #'Gestão Organizacional': [
+    #    ('19/08', 'Cultura e Clima Organizacional'),
+    #    ('26/08', 'Liderança e Motivação'),
+    #    ('02/09', 'Estrutura e Design Organizacional'),
+    #    ('09/09', 'Tomada de Decisão'),
+    #    ('16/09', 'Gestão de Mudanças')
+    #],
     'Infraestrutura de Redes': [
-        ('20/08', 'Protocolos TCP/IP'),
-        ('27/08', 'Roteamento e Switching'),
-        ('03/09', 'Segurança de Redes (Firewalls)'),
-        ('10/09', 'Redes Sem Fio (Wi-Fi)'),
-        ('17/09', 'Endereçamento IP (IPv4 e IPv6)')
+        ('18/08', 'Protocolo DHCP'),
+        ('25/08', 'Cabeamento Estruturado'),
+        ('28/08', 'Conexão WAN e LAN'),
+        ('08/09', 'Camada 3 - Roteadores'),
+        ('06/10', 'Camada 2 - Switches'),
+        ('13/10', 'NAT - Network Address Translation')
     ],
     'Metodologia de Projetos': [
         ('18/08', 'Introdução a projetos: conceitos'),
@@ -46,35 +42,15 @@ raw_conteudos_por_disciplina = {
         ('28/10', 'Metodologias ágeis (Scrum)'),
         ('03/11', 'Softwares para Gestão de Projetos'),
     ],
-    'Processo e Desv. de Sistemas': [
-        ('22/08', 'Modelagem UML'),
-        ('29/08', 'Análise de Requisitos'),
-        ('05/09', 'Ciclo de Vida do Software'),
-        ('12/09', 'Design Patterns'),
-        ('19/09', 'Testes e Validação')
-    ],
-    'Qualidade de Software': [
-        ('23/08', 'Testes Unitários e Integração'),
-        ('30/08', 'Métricas de Qualidade'),
-        ('06/09', 'Melhoria Contínua (CMMI)'),
-        ('13/09', 'Revisão de Código (Code Review)'),
-        ('20/09', 'Automação de Testes')
-    ],
-    'Sist. Operacional (Windows)': [
-        ('24/08', 'Gerenciamento de Processos'),
-        ('31/08', 'Sistema de Arquivos NTFS'),
-        ('07/09', 'PowerShell e Scripting'),
-        ('14/09', 'Segurança e Permissões'),
-        ('21/09', 'Virtualização')
-    ],
-    'Tecnologia de Hardware': [
-        ('25/08', 'Arquitetura de Computadores (CPU, Memória)'),
-        ('01/09', 'Dispositivos de Armazenamento (SSD, HDD)'),
-        ('08/09', 'Placas-Mãe e Chipsets'),
-        ('15/09', 'Periféricos e Interfaces'),
-        ('22/09', 'Manutenção Preventiva')
-    ],
 }
+
+# 🎨 INJETAR O CSS
+try:
+    with open("style/style.css", encoding="utf-8") as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    pass
+
 disciplinas = list(raw_conteudos_por_disciplina.keys())
 primeira_disciplina = disciplinas[0]
 
@@ -265,23 +241,6 @@ with st.expander("❓ Como enviar os cadernos, anotações, livros e slides."):
         """
     )
     st.markdown("---")
-    st.markdown("##### Parâmetros CRÍTICOS para a Organização")
-    st.markdown(
-        """
-        **Atenção!** Os parâmetros de contextualização são essenciais para que o sistema consiga **ler seus cadernos e organizar** o conteúdo de forma correta, garantindo que ele seja associado ao resumo certo.
-        Se preenchido de forma incorreta, a informação pode se perder ou atrapalhar a geração de outros resumos.
-
-        Preencha os seguintes parâmetros com precisão antes de clicar em 'Adicionar no Banco':
-
-        | Parâmetro | Descrição e Importância |
-        | :--- | :--- |
-        | **Disciplina** | **CRÍTICO:** Define a matéria principal para consulta. |
-        | **Conteúdo Específico** | **CRÍTICO:** O tópico exato da aula, que **já inclui a Semana da Aula e a Data** para indexação. |
-
-        Após preencher os dados e inserir o conteúdo (por texto ou PDF), clique em **'Adicionar no Banco'** para salvar o material no seu banco de dados pessoal.
-        """
-    )
-    st.markdown("---")
     st.markdown("##### Processamento das Anotações")
     st.markdown(
         """
@@ -299,77 +258,78 @@ tab_pdf, tab_text = st.tabs(["📄 Upload de PDF", "✍️Texto (Copia e Cola)",
 # TAB 1: TEXTO COPIA E COLA
 # ===============================================================
 with tab_text:
-    st.subheader("✍️Inserir Anotações Manualmente")
+    with st.container(border=True):
+        st.subheader("✍️Inserir Anotações Manualmente")
 
-    st.error("Preencher os **parâmetros** abaixo com atenção!")
+        st.info("Preencher os **parâmetros** abaixo com atenção!")
 
-    # Layout com apenas uma linha para Disciplina e Conteúdo
-    col3_t, col4_t = st.columns(2)
-    with col3_t:
-        # Disciplina (com on_change para atualizar o Conteúdo)
-        st.selectbox(
-            "Selecione a Disciplina",
-            options=disciplinas,
-            key="disc_text_key",
-            on_change=update_text_content_options,
-            help="Disciplina relacionada ao conteúdo deste caderno."
+        # Layout com apenas uma linha para Disciplina e Conteúdo
+        col3_t, col4_t = st.columns(2)
+        with col3_t:
+            # Disciplina (com on_change para atualizar o Conteúdo)
+            st.selectbox(
+                "Selecione a Disciplina",
+                options=disciplinas,
+                key="disc_text_key",
+                on_change=update_text_content_options,
+                help="Disciplina relacionada ao conteúdo deste caderno."
+            )
+        with col4_t:
+            # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
+            st.selectbox(
+                "Selecione o Conteúdo (Semana - Data - Tópico)",
+                options=st.session_state.conteudos_text_labels,
+                key="content_text_key",
+                help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
+            )
+
+        st.markdown("##### Conteúdo em Texto")
+        st.text_area(
+            "Cole o conteúdo do caderno/anotações aqui:",
+            placeholder="Cole aqui seu texto da sua anotação/caderno aqui...",
+            height=300,
+            key="conteudo_text",
+            help="Copie e cole aqui o texto integral das anotações ou resumo da aula."
         )
-    with col4_t:
-        # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
-        st.selectbox(
-            "Selecione o Conteúdo (Semana - Data - Tópico)",
-            options=st.session_state.conteudos_text_labels,
-            key="content_text_key",
-            help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
-        )
 
-    st.markdown("##### Conteúdo em Texto")
-    st.text_area(
-        "Cole o conteúdo do caderno/anotações aqui:",
-        placeholder="Cole aqui seu texto da sua anotação/caderno aqui...",
-        height=300,
-        key="conteudo_text",
-        help="Copie e cole aqui o texto integral das anotações ou resumo da aula."
-    )
+        st.markdown("---")
 
-    st.markdown("---")
+        # Botão de envio
+        if st.button("📤 Adicionar no Banco", key="submit_text", type="primary"):
 
-    # Botão de envio
-    if st.button("📤 Adicionar no Banco", key="submit_text", type="primary"):
+            disc_selecionada = st.session_state.disc_text_key
+            conteudo_input = st.session_state.conteudo_text
+            cont_selecionado_completo = st.session_state.content_text_key
 
-        disc_selecionada = st.session_state.disc_text_key
-        conteudo_input = st.session_state.conteudo_text
-        cont_selecionado_completo = st.session_state.content_text_key
+            if conteudo_input.strip() == "":
+                st.warning("📌 O conteúdo não pode estar vazio. Cole suas anotações antes de enviar.")
+            elif not cont_selecionado_completo:
+                st.warning("📌 Selecione um Conteúdo Específico antes de enviar.")
+            else:
+                try:
+                    # Extração 'backend-only': Separa Semana, Data (dd/mm) e Conteúdo do string selecionado
+                    # A função split(' - ', 2) garante que o conteúdo específico pode conter hífens ou ' - '
+                    week_str, date_str_ddmm, conteudo_especifico = cont_selecionado_completo.split(' - ', 2)
+                    semana_aula = int(week_str)
+                    # CONVERSÃO INTERNA (BACKEND-ONLY)
+                    data_aula_iso = convert_ddmm_to_iso(date_str_ddmm)
 
-        if conteudo_input.strip() == "":
-            st.warning("📌 O conteúdo não pode estar vazio. Cole suas anotações antes de enviar.")
-        elif not cont_selecionado_completo:
-            st.warning("📌 Selecione um Conteúdo Específico antes de enviar.")
-        else:
-            try:
-                # Extração 'backend-only': Separa Semana, Data (dd/mm) e Conteúdo do string selecionado
-                # A função split(' - ', 2) garante que o conteúdo específico pode conter hífens ou ' - '
-                week_str, date_str_ddmm, conteudo_especifico = cont_selecionado_completo.split(' - ', 2)
-                semana_aula = int(week_str)
-                # CONVERSÃO INTERNA (BACKEND-ONLY)
-                data_aula_iso = convert_ddmm_to_iso(date_str_ddmm)
+                except ValueError:
+                    st.error(
+                        "❌ Erro ao extrair o número da semana, data e conteúdo selecionado. Verifique o formato. String de conteúdo: " + cont_selecionado_completo)
+                    # st.stop() # Comentei st.stop para que o Streamlit possa re-renderizar a mensagem de erro
 
-            except ValueError:
-                st.error(
-                    "❌ Erro ao extrair o número da semana, data e conteúdo selecionado. Verifique o formato. String de conteúdo: " + cont_selecionado_completo)
-                # st.stop() # Comentei st.stop para que o Streamlit possa re-renderizar a mensagem de erro
-
-            dados = {
-                "conteudo": conteudo_input,
-                "usuario": usuario,
-                "data_upload": str(data_upload),
-                "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
-                "semana_aula": semana_aula,
-                "disciplina": disc_selecionada,
-                "conteudo_especifico": conteudo_especifico
-            }
-            enviar_n8n(dados)
-            # Opcional: Limpar o text_area após o envio
+                dados = {
+                    "conteudo": conteudo_input,
+                    "usuario": usuario,
+                    "data_upload": str(data_upload),
+                    "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
+                    "semana_aula": semana_aula,
+                    "disciplina": disc_selecionada,
+                    "conteudo_especifico": conteudo_especifico
+                }
+                enviar_n8n(dados)
+                # Opcional: Limpar o text_area após o envio
 
 # ===============================================================
 # TAB 2: PDF UPLOAD
@@ -380,7 +340,7 @@ with tab_pdf:
         st.subheader("📄 Extrair e Enviar Conteúdo de Arquivo PDF")
 
         # 1. Parâmetros
-        st.error("Preencher os **parâmetros** abaixo com atenção!")
+        st.info("Preencher os **parâmetros** abaixo com atenção!")
 
         # Layout com apenas uma linha para Disciplina e Conteúdo
         col3_p, col4_p = st.columns(2)
