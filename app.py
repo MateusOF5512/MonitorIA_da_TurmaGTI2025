@@ -76,7 +76,7 @@ pages = {
         #st.Page("Pages/dashboard.py", title="Dashboards", icon='📊')
     ],
     "📚 Cadernos 2° Fase": [
-        #st.Page("Pages/metodologiadeprojetos.py", title="Metodologia de Projetos", icon='🎯'),
+        st.Page("Pages/metodologiadeprojetos.py", title="Metodologia de Projetos", icon='🎯'),
         #st.Page("Pages/gestaoorganizacional.py", title="Gestão Organizacional", icon='🏢'),
         #st.Page("Pages/estatisticaempresarial.py", title="Estatística Empresarial", icon='📈'),
         st.Page("Pages/infraestruturaderedes.py", title="Infraestrutura de Redes", icon='🌐'),
