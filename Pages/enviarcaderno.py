@@ -9,22 +9,31 @@ import streamlit as st  # Streamlit precisa ser importado
 
 from Functions.interface import *
 
-
 raw_conteudos_por_disciplina = {
-    #'Estatística Empresarial': [
-    #    ('18/08', 'Análise de Variância (ANOVA)'),
-    #    ('25/08', 'Regressão Linear Múltipla'),
-    #    ('01/09', 'Testes de Hipóteses'),
-    #    ('08/09', 'Séries Temporais'),
-    #    ('15/09', 'Amostragem e Distribuição')
-    #],
-    #'Gestão Organizacional': [
-    #    ('19/08', 'Cultura e Clima Organizacional'),
-    #    ('26/08', 'Liderança e Motivação'),
-    #    ('02/09', 'Estrutura e Design Organizacional'),
-    #    ('09/09', 'Tomada de Decisão'),
-    #    ('16/09', 'Gestão de Mudanças')
-    #],
+    'Proc. e Desv. de Sistemas': [
+        ('27/08', 'Mapeamento de processos e BPMN'),
+        ('02/09', 'Conceitos de Engenharia de Software'),
+        ('03/09', 'Levantamento de requisitos'),
+        ('17/09', 'Diagramas de casos de uso'),
+        ('24/09', 'Histórias de usuário'),
+        ('15/10', 'Diagrama de classes'),
+    ],
+    'Qualidade de Software': [
+        ('19/08', 'Apresentação Qualidade de Software'),
+        ('16/09', 'Instalação e Auditoria do Calcurse no Ubuntu'),
+        ('23/09', 'Qualidade de Software e Normas ISO'),
+        ('09/09', 'Gerenciamento da Qualidade de Software'),
+        ('04/11', 'Introdução a Engenharia de Software'),
+        ('11/11', 'Introdução a Engenharia de Requisitos'),
+        ('18/11', 'Metodologias Ágeis, Interface e Ergonomia '),
+     ],
+
+    'Gestão Organizacional': [
+        ('22/08', 'Teoria geral de administração'),
+        ('29/08', 'Fundamentos da administração de negócios'),
+        ('05/09', 'Cultura Organizacional e do Clima Organizacional'),
+        ('12/09', 'Gestão do conhecimento nas organizações'),
+    ],
     'Infraestrutura de Redes': [
         ('18/08', 'Protocolo DHCP'),
         ('25/08', 'Cabeamento Estruturado'),
@@ -53,6 +62,7 @@ except FileNotFoundError:
 
 disciplinas = list(raw_conteudos_por_disciplina.keys())
 primeira_disciplina = disciplinas[0]
+TIPOS_CONTEUDO = ["Caderno", "Material Didático (Slides, Livro, etc.)"]
 
 # --- Variável global para a data base (para inferir o ano) ---
 START_YEAR = 2025  # O ano é fixo para permitir a conversão de dd/mm para YYYY-MM-DD
@@ -148,7 +158,6 @@ def extract_text_from_pdf(uploaded_file):
 
 
 def enviar_n8n(dados):
-
     WEBHOOK_URLS = "https://n8n-n8n-ortiz.q2cira.easypanel.host/webhook-test/caderno-turma"
     response = requests.post(WEBHOOK_URLS, json=dados)
     if response.status_code == 200:
@@ -206,6 +215,8 @@ if 'conteudos_text_labels' not in st.session_state:
     st.session_state.conteudos_text_labels = initial_labels
 if 'content_text_key' not in st.session_state:
     st.session_state.content_text_key = initial_labels[0] if initial_labels else ""
+if 'tipo_conteudo_text_key' not in st.session_state:  # NOVO
+    st.session_state.tipo_conteudo_text_key = TIPOS_CONTEUDO[0]  # NOVO: Inicia com "Caderno"
 
 # Aba de PDF
 if 'disc_pdf_key' not in st.session_state:
@@ -214,6 +225,8 @@ if 'conteudos_pdf_labels' not in st.session_state:
     st.session_state.conteudos_pdf_labels = initial_labels
 if 'content_pdf_key' not in st.session_state:
     st.session_state.content_pdf_key = initial_labels[0] if initial_labels else ""
+if 'tipo_conteudo_pdf_key' not in st.session_state:  # NOVO
+    st.session_state.tipo_conteudo_pdf_key = TIPOS_CONTEUDO[0]  # NOVO: Inicia com "Caderno"
 
 # --- Estado de Upload de PDF (Mantido) ---
 if 'extracted_text_pdf' not in st.session_state:
@@ -263,9 +276,10 @@ with tab_text:
 
         st.info("Preencher os **parâmetros** abaixo com atenção!")
 
-        # Layout com apenas uma linha para Disciplina e Conteúdo
-        col3_t, col4_t = st.columns(2)
-        with col3_t:
+        # Novo Layout com 3 Colunas: Disciplina, Conteúdo e Tipo de Conteúdo
+        col_disc_t, col_cont_t, col_tipo_t = st.columns(3)
+
+        with col_disc_t:
             # Disciplina (com on_change para atualizar o Conteúdo)
             st.selectbox(
                 "Selecione a Disciplina",
@@ -274,13 +288,23 @@ with tab_text:
                 on_change=update_text_content_options,
                 help="Disciplina relacionada ao conteúdo deste caderno."
             )
-        with col4_t:
+
+        with col_cont_t:
             # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
             st.selectbox(
                 "Selecione o Conteúdo (Semana - Data - Tópico)",
                 options=st.session_state.conteudos_text_labels,
                 key="content_text_key",
                 help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
+            )
+
+        with col_tipo_t:
+            # Tipo de Conteúdo
+            st.selectbox(
+                "Selecione o Tipo de Conteúdo",
+                options=TIPOS_CONTEUDO,
+                key="tipo_conteudo_text_key",
+                help="Identifica se o material é um caderno pessoal ou um material didático oficial."
             )
 
         st.markdown("##### Conteúdo em Texto")
@@ -300,6 +324,7 @@ with tab_text:
             disc_selecionada = st.session_state.disc_text_key
             conteudo_input = st.session_state.conteudo_text
             cont_selecionado_completo = st.session_state.content_text_key
+            tipo_conteudo = st.session_state.tipo_conteudo_text_key
 
             if conteudo_input.strip() == "":
                 st.warning("📌 O conteúdo não pode estar vazio. Cole suas anotações antes de enviar.")
@@ -317,7 +342,6 @@ with tab_text:
                 except ValueError:
                     st.error(
                         "❌ Erro ao extrair o número da semana, data e conteúdo selecionado. Verifique o formato. String de conteúdo: " + cont_selecionado_completo)
-                    # st.stop() # Comentei st.stop para que o Streamlit possa re-renderizar a mensagem de erro
 
                 dados = {
                     "conteudo": conteudo_input,
@@ -326,7 +350,8 @@ with tab_text:
                     "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
                     "semana_aula": semana_aula,
                     "disciplina": disc_selecionada,
-                    "conteudo_especifico": conteudo_especifico
+                    "conteudo_especifico": conteudo_especifico,
+                    "tipo_conteudo": tipo_conteudo
                 }
                 enviar_n8n(dados)
                 # Opcional: Limpar o text_area após o envio
@@ -342,9 +367,10 @@ with tab_pdf:
         # 1. Parâmetros
         st.info("Preencher os **parâmetros** abaixo com atenção!")
 
-        # Layout com apenas uma linha para Disciplina e Conteúdo
-        col3_p, col4_p = st.columns(2)
-        with col3_p:
+        # Novo Layout com 3 Colunas: Disciplina, Conteúdo e Tipo de Conteúdo
+        col_disc_p, col_cont_p, col_tipo_p = st.columns(3)
+
+        with col_disc_p:
             # Disciplina (com on_change para atualizar o Conteúdo)
             st.selectbox(
                 "Selecione a Disciplina",
@@ -353,13 +379,23 @@ with tab_pdf:
                 on_change=update_pdf_content_options,
                 help="Disciplina relacionada ao conteúdo deste caderno."
             )
-        with col4_p:
+
+        with col_cont_p:
             # Conteúdo (dinâmico, lendo de st.session_state, e contendo a Semana e a Data)
             st.selectbox(
                 "Selecione o Conteúdo (Semana - Data - Tópico)",
                 options=st.session_state.conteudos_pdf_labels,
                 key="content_pdf_key",
                 help="Tópico específico abordado. O formato é: [Semana] - [Data (dd/mm)] - [Tópico]."
+            )
+
+        with col_tipo_p:
+            # Tipo de Conteúdo
+            st.selectbox(
+                "Selecione o Tipo de Conteúdo",
+                options=TIPOS_CONTEUDO,
+                key="tipo_conteudo_pdf_key",
+                help="Identifica se o material é um caderno pessoal ou um material didático oficial."
             )
 
         st.markdown("#### Seleção do Arquivo")
@@ -431,6 +467,7 @@ with tab_pdf:
                 disc_selecionada = st.session_state.disc_pdf_key
                 cont_selecionado_completo = st.session_state.content_pdf_key
                 extracted_text_to_send = st.session_state.extracted_text_pdf  # Pega o texto completo
+                tipo_conteudo = st.session_state.tipo_conteudo_pdf_key  # NOVO
 
                 if extracted_text_to_send.strip() == "":
                     st.error("⚠️ Nenhum texto encontrado para enviar. Por favor, carregue um PDF válido.")
@@ -458,7 +495,8 @@ with tab_pdf:
                             "data_aula": data_aula_iso,  # Enviado no formato YYYY-MM-DD
                             "semana_aula": semana_aula,  # Variável para o número da semana
                             "disciplina": disc_selecionada,
-                            "conteudo_especifico": conteudo_especifico
+                            "conteudo_especifico": conteudo_especifico,
+                            "tipo_conteudo": tipo_conteudo  # NOVO: Adicionado ao envio
                         }
                         enviar_n8n(dados)
 

@@ -94,7 +94,7 @@ with col3:
         "O projeto simula um cenário de execução profissional, com papéis bem definidos para garantir a qualidade e organização.")
     st.dataframe({
         'Nome Aluno': ['João Victor', 'Mateus Ortiz', 'Pedro Paulo'],
-        'Cargo Projeto': ['Líder e Gerente de Projeto', 'Programador Full-Stack Web', ''],
+        'Cargo Projeto': ['Líder e Gerente de Projeto', 'Programador Full-Stack Web', 'Testes e Consultoria'],
     }, hide_index=True)
 
 # A coluna col_spacer fica vazia, criando o espaço

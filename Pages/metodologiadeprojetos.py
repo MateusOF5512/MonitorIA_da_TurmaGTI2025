@@ -35,7 +35,7 @@ except FileNotFoundError:
 
 # --- Interface Geral ---
 st.markdown('<div class="main-header">', unsafe_allow_html=True)
-st.subheader(f"📋 {NOME_MATERIA}", divider="rainbow", anchor=False)
+st.subheader(f"🎯 {NOME_MATERIA}", divider="rainbow", anchor=False)
 st.markdown("")
 
 with st.expander(f"❓ Como usar o Caderno de {NOME_MATERIA}"):
