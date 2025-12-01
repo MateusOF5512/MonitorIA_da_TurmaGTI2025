@@ -1,8 +1,8 @@
 [theme]
 base = 'light'
-primaryColor = "#32a041"
+primaryColor = "#38a347"
 backgroundColor = '#FFFFFF'
-textColor = "#0d0d0d"
+textColor = "#000000"
 font = "sans serif"
 buttonRadius ="large"
 
